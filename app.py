@@ -206,7 +206,7 @@ st.markdown("""
 # ---------------------------------------------------------
 # 4. التحكم الرئيسي: قائمة الاختبار التشخيصي ورابط Google Sheets
 # ---------------------------------------------------------
-col_test, col_sync = st.columns()
+col_test, col_sync = st.columns(2)
 
 with col_test:
     selected_test = st.selectbox(
@@ -343,7 +343,7 @@ with tab_grades:
         st.markdown("<hr>", unsafe_allow_html=True)
 
         # أيقونة وزر الطباعة المخصص لطلاب الفصل المحدد فوق الجدول
-        col_title, col_print_btn = st.columns()
+       col_title, col_print_btn = st.columns(2)
         with col_title:
             st.markdown(f"""
             <div class="print-class-header">
