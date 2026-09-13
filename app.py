@@ -114,6 +114,7 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"] {
     border-radius: 4px;
     border: 1px solid rgba(0,0,0,0.1);
 }
+.print-header-only { display: none; }
 .custom-grade-table {
     width: 100%;
     border-collapse: collapse;
@@ -153,7 +154,7 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"] {
 .score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; }
 .score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; }
 .score-zero { background-color: #e5e7eb !important; color: #64748b !important; }
-.score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; }
+.score-blank { background-color: #ffffff !important; color: #000000 !important; height: 32px; }
 .excel-box {
     background-color: #f0fdf4;
     border: 2px dashed #16a34a;
@@ -163,16 +164,11 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"] {
     margin-bottom: 20px;
 }
 @media print {
-    [data-testid="stSidebar"],
-    .stButton,
-    button,
-    header,
-    footer,
-    .no-print,
-    div[role="tablist"],
-    .top-toolbar,
-    [data-testid="stHeader"],
-    .color-legend {
+    @page {
+        size: A4 portrait;
+        margin: 5mm 6mm;
+    }
+    [data-testid="stSidebar"], .stButton, button, header, footer, .no-print, div[role="tablist"], .top-toolbar, [data-testid="stHeader"], .color-legend, .stSelectbox, .stCheckbox, .stPopover, .stMultiSelect, .main-header {
         display: none !important;
     }
     html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container {
@@ -182,10 +178,37 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"] {
         color: black !important;
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
+        zoom: 78% !important;
     }
-    .custom-grade-table { box-shadow: none !important; border: 1px solid #000 !important; }
-    .custom-grade-table th { color: black !important; background-color: #f1f5f9 !important; border: 1px solid #000 !important; }
-    .custom-grade-table td { border: 1px solid #000 !important; color: black !important; }
+    .print-header-only {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 6px;
+        border-bottom: 2px solid #1e3a8a;
+        padding-bottom: 4px;
+    }
+    .custom-grade-table {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+        width: 100% !important;
+        margin-top: 4px !important;
+        page-break-inside: avoid !important;
+    }
+    .custom-grade-table th {
+        color: black !important;
+        background-color: #e2e8f0 !important;
+        border: 1px solid #000 !important;
+        padding: 3px 2px !important;
+        font-size: 9.5pt !important;
+    }
+    .custom-grade-table td {
+        border: 1px solid #000 !important;
+        color: black !important;
+        padding: 2px 2px !important;
+        font-size: 9.5pt !important;
+        height: auto !important;
+    }
 }
 </style>"""
 st.markdown(clean_html(css_code), unsafe_allow_html=True)
@@ -1941,6 +1964,21 @@ def load_class_students(test_name, grade_name, class_name):
     conn.close()
     return df
 
+
+def delete_student_by_id(student_id):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM grades WHERE id = ?", (student_id,))
+    conn.commit()
+    conn.close()
+
+def delete_student_all_tests(student_name, grade_name, class_name):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM grades WHERE student_name = ? AND grade = ? AND class_name = ?", (student_name, grade_name, class_name))
+    conn.commit()
+    conn.close()
+
 def update_student_scores(df_updated):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -1995,7 +2033,7 @@ header_html = """<div class="main-header">
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
         <i class="fa-solid fa-crown designer-icon"></i>
-        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
+        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد </span>
     </div>
 </div>"""
 st.markdown(clean_html(header_html), unsafe_allow_html=True)
@@ -2094,10 +2132,27 @@ with tab_entry:
             key=f"editor_{selected_test}_{selected_grade}_{selected_class}"
         )
 
-        if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
-            update_student_scores(edited_df)
-            st.success("تم حفظ درجات جميع المواد دائمياً بنجاح!")
-            st.rerun()
+        col_s_btn, col_del_btn = st.columns(2)
+        with col_s_btn:
+            if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
+                update_student_scores(edited_df)
+                st.success("تم حفظ درجات جميع المواد دائمياً بنجاح!")
+                st.rerun()
+
+        with col_del_btn:
+            with st.popover("🗑️ حذف طالب من الفصل"):
+                st.write("**حذف طالب من الكشف:**")
+                student_to_del = st.selectbox("اختر الطالب المراد حذفه:", df_students['اسم الطالب'].tolist(), key=f"del_sel_{selected_test}_{selected_class}")
+                del_mode = st.radio("نطاق الحذف:", ["حذف من هذا الاختبار فقط", "حذف نهائي من جميع الاختبارات"], key=f"del_mode_{selected_test}_{selected_class}")
+                if st.button("❌ تأكيد حذف الطالب", type="primary", key=f"del_confirm_{selected_test}_{selected_class}"):
+                    if "نهائي" in del_mode:
+                        delete_student_all_tests(student_to_del, selected_grade, selected_class)
+                        st.success(f"تم حذف الطالب ({student_to_del}) نهائياً من كافة الاختبارات!")
+                    else:
+                        st_id = df_students[df_students['اسم الطالب'] == student_to_del]['id'].values[0]
+                        delete_student_by_id(st_id)
+                        st.success(f"تم حذف الطالب ({student_to_del}) من {selected_test}!")
+                    st.rerun()
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.write("📊 **عرض جدول الرصد المنسق بالكامل (اتجاه اليمين للجميع | رؤوس أعمدة ملونة | درجات بدون أصفار زائدة):**")
@@ -2175,6 +2230,12 @@ with tab_entry:
             </table>"""
             return table_html
 
+        print_header_html = f"""<div class="print-header-only">
+            <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
+            <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
+            <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
+        </div>"""
+        st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
         table_html = build_html_grade_table(df_students, is_blank=show_blank)
         st.markdown(clean_html(table_html), unsafe_allow_html=True)
 
