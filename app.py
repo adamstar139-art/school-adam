@@ -489,7 +489,7 @@ st.sidebar.markdown(
     <p style="margin:3px 0;"><b>وكيل الشؤون التعليمية:</b> محمد مبروك السيد</p>
     <p style="margin:3px 0;"><b>وكيل شؤون الطلاب:</b> صالح بن عبدالله الدعجاني</p>
     <hr style="margin:8px 0; border:0; border-top:1px solid #CBD5E1;">
-    <p style="margin:3px 0; color:#C59B27; font-weight:700;"><b>تصميم وإعداد:</b> الأستاذ محمد سامي السعيد</p>
+    <p style="margin:3px 0; color:#C59B27; font-weight:700;"><b>تصميم وإعداد:</b> أ محمد سامي السعيد</p>
 </div>
 """,
     unsafe_allow_html=True,
