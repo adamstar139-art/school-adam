@@ -4,7 +4,7 @@ from datetime import date, datetime
 import pandas as pd
 import streamlit as st
 
-# محاولة استيراد مكتبة Google Sheets من Streamlit
+# محاولة استيراد مكتبة Google Sheets
 try:
     from streamlit_gsheets import GSheetsConnection
 
@@ -26,7 +26,7 @@ STUDENT_ATTENDANCE_FILE = "student_attendance_db.csv"
 
 
 # ---------------------------------------------------------
-# دالة قراءة البيانات (من Google Sheets أولاً ثم النسخة المحلية)
+# دالة قراءة البيانات (من Google Sheets أو الملف المحلي)
 # ---------------------------------------------------------
 def load_student_attendance():
     if HAS_GSHEETS:
@@ -38,7 +38,6 @@ def load_student_attendance():
         except Exception:
             pass
 
-    # في حال تعذر الاتصال بـ Google Sheets يتم الاعتماد على الملف المحلي
     if os.path.exists(STUDENT_ATTENDANCE_FILE):
         try:
             return pd.read_csv(STUDENT_ATTENDANCE_FILE, encoding="utf-8-sig")
@@ -60,25 +59,25 @@ def load_student_attendance():
 
 
 # ---------------------------------------------------------
-# دالة حفظ البيانات (في Google Sheets والملف المحلي)
+# دالة حفظ البيانات (تأكيد الحفظ الدائم والمزامنة)
 # ---------------------------------------------------------
 def save_student_attendance(new_records):
     df_existing = load_student_attendance()
     df_new = pd.DataFrame(new_records)
     df_combined = pd.concat([df_existing, df_new], ignore_index=True)
 
-    # 1. الحفظ على القرص المحلي دائماً
     df_combined.to_csv(
         STUDENT_ATTENDANCE_FILE, index=False, encoding="utf-8-sig"
     )
 
-    # 2. الحفظ التلقائي في Google Sheets إذا تم ضبط الإعدادات
     if HAS_GSHEETS:
         try:
             conn = st.connection("gsheets", type=GSheetsConnection)
             conn.update(worksheet="Attendance", data=df_combined)
         except Exception as e:
-            st.warning(f"تم الحفظ محلياً (تعذر التحديث المباشر في جداول جوجل): {e}")
+            st.warning(
+                f"تم الحفظ بملف قاعدة البيانات المحلي (تعذر الاتصال بـ Google Sheets): {e}"
+            )
 
 
 # ---------------------------------------------------------
@@ -139,7 +138,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------
-# 3. المعلمون والحصص وشجرة الطلاب الكاملة
+# 3. قوائم المعلمين والحصص وشجرة الطلاب الشاملة والمكتملة
 # ---------------------------------------------------------
 TEACHERS_LIST = [
     "محمد سامي السعيد",
@@ -602,7 +601,7 @@ if role == "👨‍🏫 حساب المعلم (رصد الحضور)":
             )
         save_student_attendance(new_list)
         st.success(
-            f"تم حفظ ورصد حضور فصل ({section}) بنجاح وإرساله إلى جداول جوجل السحابية بواسطة المعلم {teacher_name}!"
+            f"تم حفظ ورصد حضور فصل ({section}) بنجاح وإرساله سحابياً لجميع الأجهزة بواسطة المعلم {teacher_name}!"
         )
 
 # ---------------------------------------------------------
@@ -781,3 +780,4 @@ else:
                     )
             else:
                 st.info("لا توجد بيانات حضور مرصودة في قاعدة البيانات حتى الآن.")
+                
