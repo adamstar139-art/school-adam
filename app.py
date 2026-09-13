@@ -343,7 +343,7 @@ with tab_grades:
         st.markdown("<hr>", unsafe_allow_html=True)
 
         # أيقونة وزر الطباعة المخصص لطلاب الفصل المحدد فوق الجدول
-       col_title, col_print_btn = st.columns(2)
+        col_title, col_print_btn = st.columns(2)
         with col_title:
             st.markdown(f"""
             <div class="print-class-header">
