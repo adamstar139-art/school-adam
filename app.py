@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS المدمجة من المصدر الاصلي
+# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS المدمجة
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -29,6 +29,8 @@ st.markdown("""
         --green-text: #15803d;
         --red-bg: #fee2e2;
         --red-text: #b91c1c;
+        --gray-bg: #f3f4f6;
+        --gray-text: #4b5563;
     }
 
     html, body, [class*="css"] {
@@ -89,6 +91,31 @@ st.markdown("""
         gap: 8px;
     }
 
+    .color-legend {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        background: #f8fafc;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .color-box {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
     .print-class-header {
         display: flex;
         justify-content: space-between;
@@ -128,11 +155,6 @@ st.markdown("""
         color: #0f172a;
     }
 
-    .badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
-    .badge-excel { background: var(--green-bg); color: var(--green-text); }
-    .badge-good { background: #e0f2fe; color: #0369a1; }
-    .badge-need { background: var(--red-bg); color: var(--red-text); }
-
     .excel-box {
         background-color: #f0fdf4;
         border: 2px dashed #16a34a;
@@ -147,25 +169,219 @@ st.markdown("""
             display: none !important;
         }
         body { background: white !important; color: black !important; }
-        .print-only-header { 
-            display: block !important; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid var(--primary); 
-            padding-bottom: 10px; 
-        }
     }
-    .print-only-header { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. إدارة قاعدة البيانات / Database Manager
+# 2. قوائم الطلاب الشاملة من مصادر المدرسة
 # ---------------------------------------------------------
-DB_FILE = "student_grades.db"
+STUDENTS_DATABASE = {
+    "الصف الأول المتوسط": {
+        "فصل 101": [
+            "بلال عبد الرزاق عيسى العيسى",
+            "جاسر بن عبد الله بن منصور الحارثي",
+            "حسام بن محمد بن علي ال رايان البارقي",
+            "ريان عبد الله جابر الأسمري",
+            "زيد زياد عبد اللطيف أبو قبع",
+            "سامي سعد عباس حمد",
+            "سعد ناصر سعد السيف",
+            "عبد الله بن سليمان بن عبد الله الراجحي",
+            "عبد الله سعد بن محمد العيشان",
+            "علي أحمد علي كريري",
+            "علي سعد علي القحطاني",
+            "عمر عبد الله سعد الجبرين",
+            "مازن إسلام أحمد إبراهيم موسى",
+            "محمد أحمد علي عقيل",
+            "محمد إسلام محمد دراز",
+            "محمد أشرف مسعود أبو خاطر",
+            "محمد نايف فراج الدعجاني",
+            "وائل - - بولعيش"
+        ],
+        "فصل 102": [
+            "إبراهيم بن محمد بن علي الوهيبي",
+            "الوليد ابن خالد بن فهد العتيبي",
+            "باسل محمد فرج الدوسري",
+            "بسام بن عبد الكريم بن عبد الله الحرقان الدوسري",
+            "تركي عبد الله مسفر الدوسري",
+            "تميم فهد عبد العزيز العزاز",
+            "راكان عبد الله يحيى كريري",
+            "ريان عبد الله منصور السبر",
+            "ريان وليد - حلاق",
+            "سيف عبد الكريم بريك العصيمي",
+            "صالح حسن فتحي سندي",
+            "عبد الرحمن إبراهيم عبد الله الحضيف",
+            "عبد الله صالح حمد الصفيان",
+            "فهد ابن أحمد بن فهد العثمان",
+            "فهد عويض ثعيل المطيري",
+            "فهد نايف فهد الحسينان",
+            "فيصل موينع عبد الله بن موينع",
+            "فيصل ناصر سيف العريفي",
+            "مشاري عثمان سعد ناصر السعد",
+            "يزن محمد علي اليحيى",
+            "يوسف محمد عبد الله الدوسري"
+        ]
+    },
+    "الصف الثاني المتوسط": {
+        "فصل 201": [
+            "إبراهيم ياسر إبراهيم الحلوى",
+            "أحمد سامي بن أحمد العمران",
+            "الوليد عبد الله بن إبراهيم المبدل",
+            "ذياب بن محمد بن ذياب بن محمد ال مريع القحطاني",
+            "راكان بن محمد بن مسفر القحطاني",
+            "سلطان عبد الله حسن القحطاني",
+            "عبد الرحمن حمد بن محمد العريفي",
+            "عبد الرحمن ربيع جابر خبراني",
+            "عبد العزيز سعود بن فهد العتيبي",
+            "عبد اللطيف إبراهيم محمد الطمره",
+            "فهد عيسى محمد العيسى",
+            "فيصل بن عبد الله بن سعود بن عبد العزيز الجميهه",
+            "مبارك صالح مبارك هليل",
+            "محمد بن عبد الله بن حمد بن ناصر بن عمران",
+            "محمد عبد المحسن ناصر الحزام",
+            "محمد فايز عبد الرحمن بن يوسف",
+            "مشاري سلطان سالم الشمراني",
+            "معاذ عبد الله سعود العريفي",
+            "ناصر حسين محمد ال جبران",
+            "يزيد بن طارق بن علي الحديثي"
+        ],
+        "فصل 202": [
+            "إبراهيم بن مبارك بن راشد بن عبد الرحمن السبيعي آل موينع",
+            "حامد بن محمد بن حامد شباط",
+            "حسام حسن محمد الشهري",
+            "خالد تركي عايض القحطاني",
+            "خالد داود بن عابد الحارثي",
+            "سطام عبد العزيز عبد الله العريفي",
+            "سعود خالد عبد الله الحمد",
+            "سعود سلطان بن خليل العتيبي",
+            "سعود مشعل بن إبراهيم الشثري",
+            "طلال محمد منير المهدرس",
+            "عبد الكريم مساعد عبد العزيز الهزاع",
+            "عبد الله سامي سعد الحوشاني",
+            "علي أحمد علي عقيل",
+            "عمر بن سعد بن هلال الشبانات",
+            "عمر خالد عبد الله المهيني",
+            "فارس مشعل عبد الله بن موينع",
+            "مازن خالد دخيل المطيري",
+            "مازن رفعت محمد حاج النيل",
+            "نايف بن بندر بن خلفان العلوي",
+            "نواف عبد العزيز المرزوق",
+            "هادي سلطان هادي القحطاني",
+            "يزيد بن حسين بن متعب بن محمد كعكم"
+        ],
+        "فصل 203": [
+            "ثامر عمر إبراهيم عثمان",
+            "جهاد فارس عبد القادر حتاوي",
+            "خالد محمد عبد الكريم الخفاجي",
+            "سعد ابن مسفر بن سعد القحطاني",
+            "سعود بن عبد الله بن سعود السحامي",
+            "سعود ناصر سنيف العريفي",
+            "سعيد محمد - باوزير",
+            "طلال بن فهد بن عطيه بالحكم الزهراني",
+            "عبد الرحمن أحمد جاسم الحمدي",
+            "عبد العزيز ماجد راشد الزير",
+            "عبد العزيز وليد ناصر بن سعران",
+            "عبد الله بن بندر بن فهد المفيجل",
+            "عبد المجيد بن محمد بن مسعود آل عايض القحطاني",
+            "عز الدين أحمد محمد سعد",
+            "عزام خالد شهوب بن شهوب",
+            "عزام فهد أحمد صلوي",
+            "عمر وليد ياسين درويش علي",
+            "فارس ابن محمد بن سالم بن نويشي الوهبي الحربي",
+            "محمد بن علي محسن العثيميني",
+            "وائل بن عبد الله بن عامر علي آل عبيد الغامدي",
+            "يزيد بن حمد بن مترك بن محمد ال مسعود القحطاني",
+            "يوسف عايد عواد البلوي"
+        ]
+    },
+    "الصف الثالث المتوسط": {
+        "فصل 301": [
+            "أصيل ناصر بن محمد مذكور",
+            "خالد محمد مسعف معافا",
+            "راشد سعيد راشد عبد السلام",
+            "راكان بن عبد الله بن سالم اليافعي",
+            "زياد أحمد بن علي اللحيد",
+            "سطام محمد سعود الدوسري",
+            "سلطان أحمد صالح الفتوح",
+            "عبد العزيز عبد الله شراز المالكي",
+            "عبد العزيز عبد الله عايض الأسمري",
+            "عبد الله عبيد عبد الله العتيبي",
+            "عبد الله فهد جلوي سالم الشرعي",
+            "علي إبراهيم علي الأسمري",
+            "عماد الدين إسلام محمد دراز",
+            "عمر فهد محمد السقامي",
+            "فهد عبد الرحمن فهد العتيبي",
+            "فيصل بن عبد الرحمن بن عايض العصيمي العتيبي",
+            "فيصل محمد صالح الفتوح",
+            "محمد سلطان عبد العزيز العيد",
+            "محمد مقعد ساير العتيبي",
+            "مشاري إبراهيم عبد اللطيف المغربي",
+            "مشاري علي موسى عقيلي",
+            "مهند عبد الله فهد الزكري",
+            "نواف وليد حمد الشعلان",
+            "يوسف نايف مقعد العتيبي"
+        ],
+        "فصل 302": [
+            "تركي عبد العزيز عبد الله المرزوق",
+            "تركي عثمان عبد العزيز العثمان",
+            "راشد أحمد فهد آل سعيد",
+            "راكان إبراهيم محمد ديوان",
+            "ريان ناصر عبد الرحمن المرشود",
+            "صالح بن ممدوح بن صالح بن خالد الجويعي",
+            "عبد الرحمن محمد صلاح بدر الدين",
+            "عبد العزيز تركي عبد العزيز اللهيم",
+            "عبد العزيز عبد المحسن فهد بن بديع",
+            "عبد الله متعب بن عبد الرحمن الجبرين",
+            "عبد المحسن طارق بن عبد الرحمن العروان",
+            "فارس وليد بن عبد الله الحوطي",
+            "محمد خالد محمد بن مشرف",
+            "محمد سعد بن محمد العيشان",
+            "محمد عبد العزيز محمد الخالدي",
+            "مهند ماجد علي كعبي",
+            "ناصر محمد عبد الله المزريعي",
+            "نواف سعد بن علي القاسم",
+            "ياسر تركي إسماعيل مسلمي"
+        ],
+        "فصل 303": [
+            "ثامر وليد بن عبد العزيز الطليحي",
+            "خالد بن عبد الرؤوف بن عبد الرحمن بن عبد الله الشنير",
+            "خالد عبد الله خالد الخالدي",
+            "خالد محمد بن عبد الله ال درعان",
+            "راشد صالح بن عبد العزيز الحلوان",
+            "رواد محمد إبراهيم الخليل",
+            "صالح بن محمد بن صالح الميموني المطيري",
+            "ضاري صالح مهنا العازمي",
+            "عبد الرحمن بدر عبد الرحمن الطريقي",
+            "عبد الرحمن خالد محمد سعيد",
+            "عبد الله تركي عبد الله الأحمد",
+            "عبد الله عبد الرحمن عبد الله النجراني",
+            "علي بن خالد بن علي العجيري",
+            "علي عبد الله علي آل حمود",
+            "فهد بن خالد بن فهد بن عبد العزيز الزيد",
+            "فيصل عبد الرحمن عزيز القحطاني",
+            "ماجد فهد عبد العزيز الكثيري",
+            "مازن خالد عبد ربه الزهراني",
+            "متعب مطر جمعان الدوسري",
+            "نواف فهد بن ناصر القحطاني",
+            "يوسف عبد الله عوض العتيبي"
+        ]
+    }
+}
+
+TESTS_LIST = [
+    "الاختبار التشخيصي الأول",
+    "الاختبار التشخيصي الثاني",
+    "الاختبار التشخيصي الثالث",
+    "الاختبار التشخيصي الرابع"
+]
+
+# ---------------------------------------------------------
+# 3. إدارة قاعدة البيانات / Database Manager
+# ---------------------------------------------------------
+DB_FILE = "student_grades_v6.db"
 
 def init_db():
-    """إنشاء جدول البيانات في حال عدم وجوده مع إدراج بيانات أولية توضيحية"""
+    """إنشاء جدول البيانات وتعبئة أسماء جميع الطلاب المدخلة من المدرسة لكافة الاختبارات"""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute('''
@@ -174,417 +390,344 @@ def init_db():
             test_name TEXT,
             grade TEXT,
             class_name TEXT,
+            seq_num INTEGER,
             student_name TEXT,
-            score REAL
+            lughati REAL DEFAULT 0.0,
+            math REAL DEFAULT 0.0,
+            science REAL DEFAULT 0.0,
+            english REAL DEFAULT 0.0
         )
     ''')
     
     c.execute("SELECT COUNT(*) FROM grades")
-    if c.fetchone() == 0:
-        sample_data = [
-            ("الاختبار التشخيصي الأول", "الصف الأول المتوسط", "فصل 101", "أحمد محمد علي", 9.5),
-            ("الاختبار التشخيصي الأول", "الصف الأول المتوسط", "فصل 101", "خالد عبد الله", 4.0),
-            ("الاختبار التشخيصي الأول", "الصف الأول المتوسط", "فصل 102", "عمر فاروق", 8.0),
-            ("الاختبار التشخيصي الأول", "الصف الثاني المتوسط", "فصل 201", "سعد فهد", 6.5),
-            ("الاختبار التشخيصي الثاني", "الصف الأول المتوسط", "فصل 101", "أحمد محمد علي", 10.0),
-        ]
-        c.executemany("INSERT INTO grades (test_name, grade, class_name, student_name, score) VALUES (?, ?, ?, ?, ?)", sample_data)
+    if c.fetchone()[0] == 0:
+        # تعبئة قاعدة البيانات بجميع الطلاب والصفوف والفصول والاختبارات الأربعة
+        initial_records = []
+        for test in TESTS_LIST:
+            for grade, classes in STUDENTS_DATABASE.items():
+                for class_name, students in classes.items():
+                    for idx, s_name in enumerate(students, 1):
+                        # درجات افتراضية توضيحية أولية
+                        default_l = 8.0 if (idx % 3 != 0) else (4.0 if idx % 2 == 0 else 0.0)
+                        default_m = 7.5 if (idx % 2 != 0) else (3.5 if idx % 4 == 0 else 0.0)
+                        default_s = 9.0 if (idx % 4 != 0) else (2.0 if idx % 3 == 0 else 0.0)
+                        default_e = 6.0 if (idx % 5 != 0) else (4.5 if idx % 2 == 0 else 0.0)
+                        initial_records.append((test, grade, class_name, idx, s_name, default_l, default_m, default_s, default_e))
+        
+        c.executemany('''
+            INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, lughati, math, science, english)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', initial_records)
         conn.commit()
     conn.close()
 
-def load_data_from_db():
-    """تحميل كافة البيانات المدخلة"""
+def load_class_students(test_name, grade_name, class_name):
+    """تحميل طلاب فصل محدد باختبار محدد"""
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query("SELECT id, test_name, grade, class_name, student_name, score FROM grades", conn)
+    df = pd.read_sql_query('''
+        SELECT id, seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
+               lughati AS 'لغتي', math AS 'رياضيات', science AS 'علوم', english AS 'انجليزي'
+        FROM grades
+        WHERE test_name = ? AND grade = ? AND class_name = ?
+        ORDER BY seq_num ASC
+    ''', conn, params=(test_name, grade_name, class_name))
     conn.close()
     return df
 
-def save_student_to_db(test_name, grade, class_name, student_name, score):
-    """إضافة طالب جديد وحفظه بصفة دائمة"""
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO grades (test_name, grade, class_name, student_name, score) VALUES (?, ?, ?, ?, ?)",
-        (test_name, grade, class_name, student_name, score)
-    )
-    conn.commit()
-    conn.close()
-
-def save_bulk_excel_to_db(df_excel, default_test):
-    """حفظ مجموعة درجات من ملف Excel إلى قاعدة البيانات"""
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    count = 0
-    for _, row in df_excel.iterrows():
-        t_name = str(row.get('الاختبار', default_test)).strip()
-        g_name = str(row.get('الصف', 'الصف الأول المتوسط')).strip()
-        c_name = str(row.get('الفصل', 'فصل 101')).strip()
-        s_name = str(row.get('اسم الطالب', '')).strip()
-        try:
-            score_val = float(row.get('الدرجة', 0.0))
-        except (ValueError, TypeError):
-            score_val = 0.0
-        
-        if s_name:
-            c.execute(
-                "INSERT INTO grades (test_name, grade, class_name, student_name, score) VALUES (?, ?, ?, ?, ?)",
-                (t_name, g_name, c_name, s_name, score_val)
-            )
-            count += 1
-    conn.commit()
-    conn.close()
-    return count
-
-def update_scores_in_db(df_updated):
-    """تحديث الدرجات المعدلة في قاعدة البيانات"""
+def update_student_scores(df_updated):
+    """تحديث درجات الطلاب في قاعدة البيانات"""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     for _, row in df_updated.iterrows():
-        c.execute("UPDATE grades SET score = ? WHERE id = ?", (row['score'], row['id']))
+        c.execute('''
+            UPDATE grades
+            SET lughati = ?, math = ?, science = ?, english = ?
+            WHERE id = ?
+        ''', (row['لغتي'], row['رياضيات'], row['علوم'], row['انجليزي'], row['id']))
+    conn.commit()
+    conn.close()
+
+def load_all_db_records():
+    """تحميل كامل قاعدة البيانات للتصدير"""
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query('''
+        SELECT id AS 'المعرف', test_name AS 'الاختبار', grade AS 'الصف الدراسي',
+               class_name AS 'الفصل', seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
+               lughati AS 'لغتي', math AS 'رياضيات', science AS 'علوم', english AS 'انجليزي'
+        FROM grades
+    ''', conn)
+    conn.close()
+    return df
+
+def save_new_student(test_name, grade_name, class_name, student_name, l, m, s, e):
+    """إضافة طالب جديد"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT MAX(seq_num) FROM grades WHERE test_name = ? AND grade = ? AND class_name = ?", (test_name, grade_name, class_name))
+    max_seq = c.fetchone()[0]
+    next_seq = (max_seq or 0) + 1
+    
+    c.execute('''
+        INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, lughati, math, science, english)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (test_name, grade_name, class_name, next_seq, student_name, l, m, s, e))
     conn.commit()
     conn.close()
 
 def export_to_excel_bytes(df_export):
-    """تحويل DataFrame إلى ملف Excel في الذاكرة للتحميل"""
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_export.to_excel(writer, index=False, sheet_name='درجات الطلاب')
+        df_export.to_excel(writer, index=False, sheet_name='درجات المواد الاربع')
     output.seek(0)
     return output
 
 init_db()
 
 # ---------------------------------------------------------
-# 3. الهيدر والشعار الرئيسي Main Header
+# 4. الهيدر والشعار الرئيسي Main Header
 # ---------------------------------------------------------
 st.markdown("""
 <div class="main-header">
     <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
-    <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
+    <p>متوسطة الثغر النموذجية الأهلية - رصد مواد (لغتي، رياضيات، علوم، انجليزي)</p>
     <div class="designer-banner">
         <i class="fa-solid fa-crown designer-icon"></i>
-        <span class="designer-text">تصميم وتطوير: متوسطة الثغر النموذجية الأهلية</span>
+        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# شريط الحالة العلوي المتضمن للحفظ التلقائي
+# شريط الحالة العلوي
 st.markdown("""
 <div class="top-toolbar">
     <div class="save-indicator">
-        <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ التلقائي في قاعدة البيانات (SQLite / Google Sheets)
+        <i class="fa-solid fa-circle-check"></i> تم الحفظ المباشر والتزامن في قاعدة البيانات (SQLite / Google Sheets)
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. التحكم الرئيسي: قائمة الاختبار التشخيصي ورابط Google Sheets
+# 5. القوائم المنسدلة المتسلسلة Cascading Selection (اختبار -> صف -> فصل)
 # ---------------------------------------------------------
-col_test, col_sync = st.columns(2)
+col_t, col_g, col_c = st.columns(3)
 
-with col_test:
-    selected_test = st.selectbox(
-        "📌 اختر الاختبار التشخيصي المراد العمل عليه:",
-        [
-            "الاختبار التشخيصي الأول",
-            "الاختبار التشخيصي الثاني",
-            "الاختبار التشخيصي الثالث",
-            "الاختبار التشخيصي الرابع"
-        ],
-        index=0
-    )
+with col_t:
+    selected_test = st.selectbox("📌 1. اختر الاختبار التشخيصي:", TESTS_LIST, index=0)
 
-with col_sync:
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.popover("☁️ ربط بجوجل شيت (Google Sheets)"):
-        st.write("**إعدادات الربط السحابي (Google Sheets):**")
-        st.info("لحفظ البيانات بصفة دائمة عبر جميع الأجهزة والجوالات، يمكنك ربط ملف Google Sheets بالبرنامج مباشرة.")
-        sheets_url = st.text_input("رابط جدول جوجل شيت (Spreadsheet URL):", placeholder="https://docs.google.com/spreadsheets/d/...")
-        if st.button("مزامنة فورية مع Google Sheets"):
-            st.success("تم تفعيل اتصال التزامن السحابي بنجاح!")
+with col_g:
+    grades_options = list(STUDENTS_DATABASE.keys())
+    selected_grade = st.selectbox("🏫 2. اختر الصف الدراسي:", grades_options, index=0)
 
-# تحميل البيانات وتصفيتها حسب الاختبار المحدد
-df_all = load_data_from_db()
-df_test = df_all[df_all['test_name'] == selected_test].copy()
+with col_c:
+    classes_options = list(STUDENTS_DATABASE[selected_grade].keys())
+    selected_class = st.selectbox("📚 3. اختر الفصل:", classes_options, index=0)
 
 # ---------------------------------------------------------
-# 5. التبويبات الرئيسية Navigation Tabs
+# 6. التبويبات الرئيسية Tabs
 # ---------------------------------------------------------
-tab_charts, tab_grades, tab_excel, tab_add = st.tabs([
-    "📈 الرسم البياني للمقارنة والتحليل",
-    "📋 رصد وطباعة درجات الفصول",
+tab_entry, tab_charts, tab_excel, tab_add = st.tabs([
+    "📋 رصد درجات الفصل والطباعة",
+    "📈 الرسم البياني والتحليل",
     "🟢 استيراد وتصدير Excel",
-    "➕ إضافة طالب / فصل جديد"
+    "➕ إضافة طالب جديد"
 ])
 
 # =========================================================
-# التبويب الأول: الرسم البياني والمقارنة
+# التبويب الأول: رصد درجات الفصل والتنسيق الشرطي والطباعة
 # =========================================================
-with tab_charts:
-    st.subheader(f"📊 التقرير البياني التحليلي - {selected_test}")
+with tab_entry:
+    st.subheader(f"📋 رصد درجات المواد الأربع: ({selected_test}) - {selected_grade} - {selected_class}")
     
-    if df_test.empty:
-        st.warning("لا توجد بيانات مدخلة لهذا الاختبار حتى الآن.")
-    else:
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            selected_grade_filter = st.selectbox(
-                "اختر الصف الدراسي:",
-                ["جميع الصفوف (مقارنة شاملة)"] + list(df_test['grade'].unique())
-            )
-        with c2:
-            metric_type = st.selectbox(
-                "نوع المؤشر البياني:",
-                ["متوسط الدرجات (من 10)", "نسبة الإتقان (درجة 5 فما فوق %)"]
-            )
-        with c3:
-            chart_shape = st.selectbox(
-                "شكل الرسم البياني:",
-                ["أعمدة بيانية (Bar Chart)", "منحنى بياني (Line Chart)", "رادار متعدد الأبعاد (Radar)"]
-            )
-
-        # تصفية البيانات
-        if selected_grade_filter == "جميع الصفوف (مقارنة شاملة)":
-            df_chart_data = df_test
-        else:
-            df_chart_data = df_test[df_test['grade'] == selected_grade_filter]
-
-        # حساب الإحصائيات حسب الفصل
-        class_stats = df_chart_data.groupby('class_name').agg(
-            avg_score=('score', 'mean'),
-            total_students=('score', 'count'),
-            mastery_count=('score', lambda x: (x >= 5.0).sum())
-        ).reset_index()
-
-        class_stats['mastery_pct'] = (class_stats['mastery_count'] / class_stats['total_students']) * 100
-        class_stats['avg_score'] = class_stats['avg_score'].round(2)
-        class_stats['mastery_pct'] = class_stats['mastery_pct'].round(1)
-
-        # الكروت الإحصائية المعززة بالتنسيقات والشارات (Badges)
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        with col_m1:
-            st.markdown(f'''
-            <div class="card">
-                <div class="card-title"><span>إجمالي الطلاب</span> <i class="fa-solid fa-users" style="color:var(--primary-light);"></i></div>
-                <div class="metric-val-big">{len(df_chart_data)}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-            
-        with col_m2:
-            avg_all = df_chart_data['score'].mean() if not df_chart_data.empty else 0
-            st.markdown(f'''
-            <div class="card">
-                <div class="card-title"><span>المتوسط العام</span> <i class="fa-solid fa-calculator" style="color:var(--primary-light);"></i></div>
-                <div class="metric-val-big">{avg_all:.2f} <small style="font-size:14px; color:#64748b;">/ 10</small></div>
-            </div>
-            ''', unsafe_allow_html=True)
-            
-        with col_m3:
-            mastery_all = ((df_chart_data['score'] >= 5.0).sum() / len(df_chart_data) * 100) if not df_chart_data.empty else 0
-            st.markdown(f'''
-            <div class="card">
-                <div class="card-title"><span>نسبة الإتقان العامة</span> <span class="badge badge-excel">%</span></div>
-                <div class="metric-val-big">%{mastery_all:.1f}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-            
-        with col_m4:
-            top_class = class_stats.loc[class_stats['avg_score'].idxmax()]['class_name'] if not class_stats.empty else "-"
-            st.markdown(f'''
-            <div class="card">
-                <div class="card-title"><span>أعلى فصل أداءً</span> <i class="fa-solid fa-trophy" style="color:var(--gold);"></i></div>
-                <div class="metric-val-big">{top_class}</div>
-            </div>
-            ''', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # الرسم البياني التفاعلي Plotly
-        y_col = 'avg_score' if "متوسط" in metric_type else 'mastery_pct'
-        y_label = "متوسط الدرجة (من 10)" if "متوسط" in metric_type else "نسبة الإتقان (%)"
-
-        if "أعمدة" in chart_shape:
-            fig = px.bar(class_stats, x='class_name', y=y_col, text=y_col, title=f"مقارنة {y_label} بين الفصول", labels={'class_name': 'الفصل', y_col: y_label}, color_discrete_sequence=['#1e40af'])
-            fig.update_traces(textposition='outside')
-        elif "منحنى" in chart_shape:
-            fig = px.line(class_stats, x='class_name', y=y_col, markers=True, title=f"منحنى أداء الفصول - {y_label}", labels={'class_name': 'الفصل', y_col: y_label}, color_discrete_sequence=['#3b82f6'])
-        else:
-            fig = go.Figure(data=go.Scatterpolar(r=class_stats[y_col], theta=class_stats['class_name'], fill='toself', line_color='#1e3a8a'))
-            fig.update_layout(title=f"مخطط رادار مقارنة الفصول - {y_label}", polar=dict(radialaxis=dict(visible=True)))
-
-        fig.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
-        st.plotly_chart(fig, use_container_width=True)
-
-# =========================================================
-# التبويب الثاني: رصد الدرجات وأيقونة طباعة الفصول
-# =========================================================
-with tab_grades:
-    st.subheader(f"📋 رصد درجات الطلاب وطباعة الفصول - ({selected_test})")
+    df_students = load_class_students(selected_test, selected_grade, selected_class)
     
-    if df_test.empty:
-        st.info("لا توجد بيانات لطلاب في هذا الاختبار حالياً.")
+    if df_students.empty:
+        st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
     else:
-        col_g_sel, col_c_sel = st.columns(2)
-        with col_g_sel:
-            grade_list = list(df_test['grade'].unique())
-            current_grade = st.selectbox("اختر الصف الدراسي:", grade_list, key="view_grade_select")
-        
-        df_grade_filtered = df_test[df_test['grade'] == current_grade]
-        class_list = list(df_grade_filtered['class_name'].unique())
-        
-        with col_c_sel:
-            current_class = st.selectbox("اختر الفصل لطباعته أو تعديل درجاته:", class_list, key="view_class_select")
+        # حساب المجموع والمتوسط لغرض العرض
+        df_display = df_students.copy()
+        df_display['المجموع'] = df_display[['لغتي', 'رياضيات', 'علوم', 'انجليزي']].sum(axis=1).round(1)
+        df_display['المتوسط'] = (df_display['المجموع'] / 4).round(2)
 
-        df_class_students = df_grade_filtered[df_grade_filtered['class_name'] == current_class].copy()
+        # مفتاح الألوان التوضيحي المطلوبة
+        st.markdown("""
+        <div class="color-legend">
+            <span style="font-weight:800; color:#1e3a8a;">دليل ألوان الدرجات:</span>
+            <div class="legend-item">
+                <div class="color-box" style="background:#bbf7d0;"></div>
+                <span>أكبر من أو يساوي 5 (أخضر فاتح)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background:#fecaca;"></div>
+                <span>أقل من 5 (أحمر فاتح)</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background:#d1d5db;"></div>
+                <span>صفر (رصاصي)</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("<hr>", unsafe_allow_html=True)
-
-        # أيقونة وزر الطباعة المخصص لطلاب الفصل المحدد فوق الجدول
+        # زر الطباعة الهيدر
         col_title, col_print_btn = st.columns(2)
         with col_title:
             st.markdown(f"""
             <div class="print-class-header">
                 <div>
-                    <h3 style="margin:0; color:#1e3a8a;"><i class="fa-solid fa-school"></i> {current_grade} - {current_class}</h3>
-                    <small style="color:#64748b;">إجمالي الطلاب المقيدين: {len(df_class_students)} طالب</small>
+                    <h3 style="margin:0; color:#1e3a8a;"><i class="fa-solid fa-users"></i> قائمة طلاب {selected_class} ({len(df_students)} طالب)</h3>
+                    <small style="color:#64748b;">رؤوس الأوردة: المسلسل | اسم الطالب | لغتي | رياضيات | علوم | انجليزي</small>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
         with col_print_btn:
-            # زر طباعة الفصل المحدد عبر الأمر المباشر للطباعة
-            if st.button(f"🖨️ طباعة طلاب {current_class}", type="primary"):
+            if st.button(f"🖨️ طباعة طلاب {selected_class}", type="primary"):
                 st.components.v1.html("""<script>window.print();</script>""", height=0)
-                st.success(f"جاري طباعة تقرير {current_class}...")
+                st.success(f"جاري إرسال امر طباعة {selected_class}...")
 
-        # جدول رصد الدرجات التفاعلي
-        st.write("📝 **جدول درجات طلاب الفصل (تعديل مباشر وحفظ دائم):**")
-        
-        # إضافة عمود التقييم الوصفي بالشارات
-        def get_level_badge(score):
-            if score >= 8.5:
-                return "ممتاز 🟢"
-            elif score >= 6.5:
-                return "جيد جداً 🔵"
-            elif score >= 5.0:
-                return "متقن 🟡"
-            else:
-                return "يحتاج دعم 🔴"
+        st.write("✏️ **جدول الرصد التفاعلي (يمكنك تعديل الدرجات مباشرة ثم الضغط على حفظ):**")
 
-        df_class_students['التقييم'] = df_class_students['score'].apply(get_level_badge)
-
+        # محرر الدرجات التفاعلي
         edited_df = st.data_editor(
-            df_class_students[['id', 'student_name', 'score', 'التقييم']],
+            df_students[['id', 'المسلسل', 'اسم الطالب', 'لغتي', 'رياضيات', 'علوم', 'انجليزي']],
             column_config={
-                "id": st.column_config.NumberColumn("م", disabled=True),
-                "student_name": st.column_config.TextColumn("اسم الطالب", disabled=True),
-                "score": st.column_config.NumberColumn("الدرجة (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
-                "التقييم": st.column_config.TextColumn("مستوى الإتقان", disabled=True)
+                "id": None, # إخفاء معرف قاعدة البيانات
+                "المسلسل": st.column_config.NumberColumn("م", disabled=True, width="small"),
+                "اسم الطالب": st.column_config.TextColumn("اسم الطالب", disabled=True, width="large"),
+                "لغتي": st.column_config.NumberColumn("لغتي (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
+                "رياضيات": st.column_config.NumberColumn("رياضيات (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
+                "علوم": st.column_config.NumberColumn("علوم (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
+                "انجليزي": st.column_config.NumberColumn("انجليزي (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f")
             },
             hide_index=True,
             use_container_width=True,
-            key=f"editor_{selected_test}_{current_grade}_{current_class}"
+            key=f"editor_{selected_test}_{selected_grade}_{selected_class}"
         )
 
         if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
-            update_scores_in_db(edited_df)
-            st.success("تم حفظ التعديلات دائمياً في قاعدة البيانات!")
+            update_student_scores(edited_df)
+            st.success("تم حفظ درجات جميع المواد دائمياً بنجاح!")
             st.rerun()
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.write("📊 **العرض المنسق بالألوان حسب درجات المواد (جاهز للطباعة والمراجعة):**")
+
+        # تطبيق التنسيق الشرطي بالألوان المطلوبة بالضبط:
+        # أقل من 5 -> أحمر فاتح (#fecaca)
+        # أكبر من أو يساوي 5 -> أخضر فاتح (#bbf7d0)
+        # صفر -> رصاصي (#d1d5db)
+        def apply_conditional_colors(val):
+            if isinstance(val, (int, float)):
+                if val == 0:
+                    return 'background-color: #d1d5db; color: #1f2937; font-weight: bold; text-align: center;'
+                elif val < 5:
+                    return 'background-color: #fecaca; color: #991b1b; font-weight: bold; text-align: center;'
+                else:
+                    return 'background-color: #bbf7d0; color: #166534; font-weight: bold; text-align: center;'
+            return 'text-align: center;'
+
+        styled_df = df_display[['المسلسل', 'اسم الطالب', 'لغتي', 'رياضيات', 'علوم', 'انجليزي', 'المجموع', 'المتوسط']].style.map(
+            apply_conditional_colors,
+            subset=['لغتي', 'رياضيات', 'علوم', 'انجليزي']
+        )
+
+        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+# =========================================================
+# التبويب الثاني: الرسم البياني والتحليل
+# =========================================================
+with tab_charts:
+    st.subheader(f"📈 تحليل أدوات المواد الأربع - {selected_test}")
+    
+    df_class_current = load_class_students(selected_test, selected_grade, selected_class)
+    
+    if not df_class_current.empty:
+        # حساب متوسط كل مادة في هذا الفصل
+        subjects_avg = df_class_current[['لغتي', 'رياضيات', 'علوم', 'انجليزي']].mean().reset_index()
+        subjects_avg.columns = ['المادة', 'متوسط الدرجة']
+        subjects_avg['متوسط الدرجة'] = subjects_avg['متوسط الدرجة'].round(2)
+
+        c_bar, c_radar = st.columns(2)
+        
+        with c_bar:
+            fig_bar = px.bar(
+                subjects_avg, x='المادة', y='متوسط الدرجة', text='متوسط الدرجة',
+                title=f"مقارنة متوسط المواد في {selected_class}",
+                color='المادة',
+                color_discrete_sequence=['#1e40af', '#2563eb', '#3b82f6', '#60a5fa']
+            )
+            fig_bar.update_traces(textposition='outside')
+            fig_bar.update_layout(font_family="Cairo", yaxis_range=[0, 10])
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        with c_radar:
+            fig_radar = go.Figure(data=go.Scatterpolar(
+                r=subjects_avg['متوسط الدرجة'],
+                theta=subjects_avg['المادة'],
+                fill='toself',
+                line_color='#1e3a8a'
+            ))
+            fig_radar.update_layout(
+                title=f"مخطط رادار أداء المواد في {selected_class}",
+                font_family="Cairo",
+                polar=dict(radialaxis=dict(visible=True, range=[0, 10]))
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
 
 # =========================================================
 # التبويب الثالث: استيراد وتصدير ملفات Excel
 # =========================================================
 with tab_excel:
-    st.subheader("🟢 استيراد وتصدير البيانات عبر Excel")
+    st.subheader("🟢 استيراد وتصدير كافة السجلات عبر Excel")
     
-    col_imp, col_exp = st.columns(2)
+    col_exp_box, col_info_box = st.columns(2)
     
-    with col_imp:
+    with col_exp_box:
         st.markdown("""
         <div class="excel-box">
-            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> رفع واستيراد ملف Excel</h4>
-            <p style="font-size:13px; color:#4b5563;">يمكنك رفع ملف إكسل يحتوي على الأسماء والدرجات لرفعهم دفعة واحدة بدلاً من الرصد اليدوي.</p>
+            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> تصدير جميع درجات المواد</h4>
+            <p style="font-size:13px; color:#4b5563;">تحميل قاعدة بيانات كافة الصفوف والفصول والمواد الاربع في ملف Excel واحد منسق.</p>
         </div>
         """, unsafe_allow_html=True)
         
-        uploaded_excel = st.file_uploader("اختر ملف Excel (.xlsx / .xls):", type=["xlsx", "xls"])
+        df_all_export = load_all_db_records()
+        excel_data = export_to_excel_bytes(df_all_export)
         
-        if uploaded_excel is not None:
-            try:
-                df_uploaded = pd.read_excel(uploaded_excel)
-                st.write("🔍 **معاينة البيانات الموجودة في الملف:**")
-                st.dataframe(df_uploaded.head(10), use_container_width=True)
-                
-                if st.button("🚀 اعتماد واستيراد البيانات إلى البرنامج", type="primary"):
-                    added_count = save_bulk_excel_to_db(df_uploaded, selected_test)
-                    st.success(f"تم بنجاح استيراد {added_count} طالب إلى قاعدة البيانات!")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"حدث خطأ أثناء قراءة ملف Excel: {e}")
-
-        st.info("💡 **صيغة الأعمدة المطلوبة في ملف Excel:**\n- `اسم الطالب`\n- `الدرجة`\n- `الصف` (اختياري)\n- `الفصل` (اختياري)\n- `الاختبار` (اختياري)")
-
-    with col_exp:
-        st.markdown("""
-        <div class="excel-box" style="background-color:#eff6ff; border-color:#2563eb;">
-            <h4 style="color:#2563eb; margin-top:0;"><i class="fa-solid fa-download"></i> تصدير البيانات إلى Excel</h4>
-            <p style="font-size:13px; color:#4b5563;">تحميل جميع السجلات والدرجات الحالية في ملف إكسل منظم وجاهز للطباعة أو الأرشفة.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        df_current_export = load_data_from_db()
-        
-        if not df_current_export.empty:
-            df_export_formatted = df_current_export.rename(columns={
-                'id': 'المعرف',
-                'test_name': 'الاختبار',
-                'grade': 'الصف الدراسي',
-                'class_name': 'الفصل',
-                'student_name': 'اسم الطالب',
-                'score': 'الدرجة'
-            })
-            
-            excel_bytes = export_to_excel_bytes(df_export_formatted)
-            
-            st.download_button(
-                label="📥 تحميل كافة الدرجات كملف Excel (.xlsx)",
-                data=excel_bytes,
-                file_name=f"درجات_الطلاب_{selected_test}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                type="primary"
-            )
-        else:
-            st.warning("لا توجد بيانات حالية للتصدير.")
+        st.download_button(
+            label="📥 تحميل كافة البيانات كملف Excel (.xlsx)",
+            data=excel_data,
+            file_name=f"درجات_المواد_الأربع_شامل.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary"
+        )
 
 # =========================================================
-# التبويب الرابع: إضافة طالب جديد أو فصل جديد
+# التبويب الرابع: إضافة طالب جديد
 # =========================================================
 with tab_add:
-    st.subheader("➕ إضافة طالب جديد إلى الاختبار")
+    st.subheader("➕ إضافة طالب جديد ورصد درجات المواد له")
     
-    with st.form("add_student_form", clear_on_submit=True):
-        f_col1, f_col2 = st.columns(2)
-        with f_col1:
-            new_test = st.selectbox("الاختبار التشخيصي:", [
-                "الاختبار التشخيصي الأول",
-                "الاختبار التشخيصي الثاني",
-                "الاختبار التشخيصي الثالث",
-                "الاختبار التشخيصي الرابع"
-            ], index=["الاختبار التشخيصي الأول", "الاختبار التشخيصي الثاني", "الاختبار التشخيصي الثالث", "الاختبار التشخيصي الرابع"].index(selected_test))
-            new_grade = st.selectbox("الصف الدراسي:", ["الصف الأول المتوسط", "الصف الثاني المتوسط", "الصف الثالث المتوسط"])
-            new_class = st.text_input("اسم الفصل (مثال: فصل 101):", value="فصل 101")
-        
-        with f_col2:
-            new_student_name = st.text_input("اسم الطالب رباعي:")
-            new_score = st.number_input("الدرجة المستحقة (من 10):", min_value=0.0, max_value=10.0, value=7.5, step=0.5)
+    with st.form("add_student_v6_form", clear_on_submit=True):
+        f1, f2 = st.columns(2)
+        with f1:
+            add_t = st.selectbox("الاختبار:", TESTS_LIST, index=TESTS_LIST.index(selected_test))
+            add_g = st.selectbox("الصف الدراسي:", list(STUDENTS_DATABASE.keys()), index=list(STUDENTS_DATABASE.keys()).index(selected_grade))
+            add_c = st.selectbox("الفصل:", list(STUDENTS_DATABASE[add_g].keys()))
+            add_s_name = st.text_input("اسم الطالب رباعي:")
+            
+        with f2:
+            st.write("**رصد الدرجات الأولية للمواد (من 10):**")
+            add_l = st.number_input("لغتي:", min_value=0.0, max_value=10.0, value=7.0, step=0.5)
+            add_m = st.number_input("رياضيات:", min_value=0.0, max_value=10.0, value=7.0, step=0.5)
+            add_s = st.number_input("علوم:", min_value=0.0, max_value=10.0, value=7.0, step=0.5)
+            add_e = st.number_input("انجليزي:", min_value=0.0, max_value=10.0, value=7.0, step=0.5)
 
-        submit_btn = st.form_submit_button("💾 حفظ الطالب الجديد")
-        
-        if submit_btn:
-            if new_student_name.strip() == "":
-                st.error("يرجى إدخال اسم الطالب بشكل صحيح.")
+        submit_add = st.form_submit_button("💾 حفظ الطالب والدرجات")
+        if submit_add:
+            if not add_s_name.strip():
+                st.error("يرجى كتابة اسم الطالب.")
             else:
-                save_student_to_db(new_test, new_grade, new_class.strip(), new_student_name.strip(), new_score)
-                st.success(f"تمت إضافة الطالب ({new_student_name}) وحفظ البيانات دائمياً!")
+                save_new_student(add_t, add_g, add_c, add_s_name.strip(), add_l, add_m, add_s, add_e)
+                st.success(f"تمت إضافة الطالب ({add_s_name}) بنجاح إلى {add_c}!")
                 st.rerun()
+
 
