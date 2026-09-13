@@ -179,7 +179,7 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"] {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
-        zoom: 150% !important;
+        zoom: 90% !important;
     }
     .print-header-only {
         display: block !important;
