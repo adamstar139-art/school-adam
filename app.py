@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -17,207 +16,7 @@ st.set_page_config(
 )
 
 # تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS وتعديل اتجاه الجداول وطباعتها بدون أخطاء Txt
-st.markdown("""<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
-
-:root {
-    --primary: #1e3a8a;
-    --primary-light: #3b82f6;
-    --gold: #fbbf24;
-    --green-bg: #dcfce7;
-    --green-text: #15803d;
-    --red-bg: #fee2e2;
-    --red-text: #b91c1c;
-    --gray-bg: #e5e7eb;
-    --gray-text: #4b5563;
-}
-
-html, body, [class*="css"], [data-testid="stAppViewContainer"] {
-    font-family: 'Cairo', sans-serif !important;
-    direction: rtl !important;
-    text-align: right !important;
-}
-
-.main-header {
-    text-align: center;
-    background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6);
-    color: white;
-    padding: 24px 20px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 20px rgba(30, 58, 138, 0.15);
-    position: relative;
-    overflow: hidden;
-}
-.main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; }
-.main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; }
-
-.designer-banner {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 6px 22px;
-    border-radius: 50px;
-    margin-top: 5px;
-}
-.designer-text { font-size: 16px; font-weight: 800; color: var(--gold); }
-.designer-icon { font-size: 18px; color: var(--gold); }
-
-.top-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    background: white;
-    padding: 14px 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-    border-right: 5px solid var(--primary-light);
-    flex-wrap: wrap;
-    gap: 10px;
-    direction: rtl;
-}
-
-.save-indicator { 
-    font-size: 14px; 
-    color: #10b981; 
-    font-weight: 700; 
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.color-legend {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    background: #f8fafc;
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    direction: rtl;
-}
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 700;
-}
-.color-box {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.custom-grade-table {
-    width: 100%;
-    border-collapse: collapse;
-    direction: rtl !important;
-    text-align: center;
-    font-family: 'Cairo', sans-serif;
-    margin-top: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    border-radius: 12px;
-    overflow: hidden;
-}
-.custom-grade-table th {
-    padding: 12px 8px;
-    color: white;
-    font-weight: 800;
-    font-size: 14px;
-    border: 1px solid #cbd5e1;
-    text-align: center;
-}
-.th-seq { background-color: #1e3a8a; width: 6%; }
-.th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; }
-.th-sci { background-color: #1e40af; width: 10%; }
-.th-math { background-color: #2563eb; width: 10%; }
-.th-lug { background-color: #3b82f6; width: 10%; }
-.th-eng { background-color: #0284c7; width: 10%; }
-.th-tot { background-color: #0f766e; width: 12%; }
-.th-avg { background-color: #0369a1; width: 12%; }
-
-.custom-grade-table td {
-    padding: 9px 8px;
-    border: 1px solid #cbd5e1;
-    font-size: 14px;
-    font-weight: 700;
-    text-align: center;
-}
-.td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; }
-.td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; }
-
-.score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; }
-.score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; }
-.score-zero { background-color: #e5e7eb !important; color: #64748b !important; }
-.score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; }
-
-.excel-box {
-    background-color: #f0fdf4;
-    border: 2px dashed #16a34a;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-@media print {
-    [data-testid="stSidebar"],
-    .stButton,
-    button,
-    header,
-    footer,
-    .no-print,
-    div[role="tablist"],
-    .top-toolbar,
-    [data-testid="stHeader"],
-    .color-legend {
-        display: none !important;
-    }
-    
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container {
-        display: block !important;
-        visibility: visible !important;
-        background: white !important;
-        color: black !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-    }
-
-    .custom-grade-table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        page-break-inside: auto;
-    }
-    .custom-grade-table tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-    }
-    .custom-grade-table th, .custom-grade-table td {
-        border: 1px solid #000 !important;
-        padding: 6px 8px !important;
-        font-size: 11pt !important;
-    }
-    .custom-grade-table th {
-        background-color: #f1f5f9 !important;
-        color: #000 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    .score-green { background-color: #bbf7d0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .score-red { background-color: #fecaca !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .score-zero { background-color: #e5e7eb !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-}
-</style>""", unsafe_allow_html=True)
+st.markdown("""<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap'); :root { --primary: #1e3a8a; --primary-light: #3b82f6; --gold: #fbbf24; --green-bg: #dcfce7; --green-text: #15803d; --red-bg: #fee2e2; --red-text: #b91c1c; --gray-bg: #e5e7eb; --gray-text: #4b5563; } html, body, .stApp, header, footer, div, span, label, input, select, button, table, th, td { font-family: 'Cairo', sans-serif !important; direction: rtl !important; text-align: right !important; } .main-header { text-align: center; background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6); color: white; padding: 24px 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(30,58,138,0.15); position: relative; overflow: hidden; } .main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; } .main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; } .designer-banner { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.4); padding: 6px 22px; border-radius: 50px; margin-top: 5px; } .designer-text { font-size: 16px; font-weight: 800; color: var(--gold); } .designer-icon { font-size: 18px; color: var(--gold); } .top-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 14px 20px; border-radius: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-right: 5px solid var(--primary-light); flex-wrap: wrap; gap: 10px; direction: rtl; } .save-indicator { font-size: 14px; color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 8px; } .color-legend { display: flex; gap: 15px; align-items: center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 15px; flex-wrap: wrap; direction: rtl; } .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; } .color-box { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); } .custom-grade-table { width: 100%; border-collapse: collapse; direction: rtl !important; text-align: center; font-family: 'Cairo', sans-serif; margin-top: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; } .custom-grade-table th { padding: 12px 8px; color: white; font-weight: 800; font-size: 14px; border: 1px solid #cbd5e1; text-align: center; } .th-seq { background-color: #1e3a8a; width: 6%; } .th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; } .th-sci { background-color: #1e40af; width: 10%; } .th-math { background-color: #2563eb; width: 10%; } .th-lug { background-color: #3b82f6; width: 10%; } .th-eng { background-color: #0284c7; width: 10%; } .th-tot { background-color: #0f766e; width: 12%; } .th-avg { background-color: #0369a1; width: 12%; } .custom-grade-table td { padding: 9px 8px; border: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; text-align: center; } .td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; } .td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; } .score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; } .score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; } .score-zero { background-color: #e5e7eb !important; color: #64748b !important; } .score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; } .excel-box { background-color: #f0fdf4; border: 2px dashed #16a34a; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; } @media print { [data-testid="stSidebar"], .stButton, button, header, footer, .no-print, div[role="tablist"], .top-toolbar, [data-testid="stHeader"], .color-legend { display: none !important; } html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container { display: block !important; visibility: visible !important; background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; width: 100% !important; } .custom-grade-table { box-shadow: none !important; border: 1px solid #000 !important; font-size: 12pt !important; } .custom-grade-table th { color: black !important; background-color: #f1f5f9 !important; border: 1px solid #000 !important; } .custom-grade-table td { border: 1px solid #000 !important; color: black !important; } .score-green { background-color: #dcfce7 !important; color: black !important; } .score-red { background-color: #fee2e2 !important; color: black !important; } .score-zero { background-color: #f3f4f6 !important; color: black !important; } }</style>""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 2. قاعدة بيانات الطلاب الشاملة (172 طالب)
@@ -2108,7 +1907,7 @@ st.markdown("""<div class="main-header">
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
         <i class="fa-solid fa-crown designer-icon"></i>
-        <span class="designer-text">تصميم وتطوير: متوسطة الثغر النموذجية الأهلية</span>
+        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
     </div>
 </div>""", unsafe_allow_html=True)
 
@@ -2194,10 +1993,10 @@ with tab_entry:
                 "id": None,
                 "المسلسل": st.column_config.NumberColumn("م", disabled=True, width="small"),
                 "اسم الطالب": st.column_config.TextColumn("اسم الطالب", disabled=True, width="large"),
-                "علوم": st.column_config.NumberColumn("علوم (10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
-                "رياضيات": st.column_config.NumberColumn("رياضيات (10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
-                "لغتي": st.column_config.NumberColumn("لغتي (10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
-                "انجليزي": st.column_config.NumberColumn("انجليزي (10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f")
+                "علوم": st.column_config.NumberColumn("علوم (10)", min_value=0.0, max_value=10.0, step=0.5, format="%g"),
+                "رياضيات": st.column_config.NumberColumn("رياضيات (10)", min_value=0.0, max_value=10.0, step=0.5, format="%g"),
+                "لغتي": st.column_config.NumberColumn("لغتي (10)", min_value=0.0, max_value=10.0, step=0.5, format="%g"),
+                "انجليزي": st.column_config.NumberColumn("انجليزي (10)", min_value=0.0, max_value=10.0, step=0.5, format="%g")
             },
             hide_index=True,
             use_container_width=True,
@@ -2240,11 +2039,10 @@ with tab_entry:
                     def fmt_score_cell(v):
                         if pd.isna(v) or v == 0 or v == 0.0:
                             return 'score-zero', ''
-                        elif v < 5.0:
-                            txt = f'{int(v)}' if v == int(v) else f'{v:.1f}'
+                        txt = str(int(v)) if v == int(v) else f'{v:.1f}'
+                        if v < 5.0:
                             return 'score-red', txt
                         else:
-                            txt = f'{int(v)}' if v == int(v) else f'{v:.1f}'
                             return 'score-green', txt
 
                     cs, ts = fmt_score_cell(s_val)
@@ -2252,8 +2050,19 @@ with tab_entry:
                     cl, tl = fmt_score_cell(l_val)
                     ce, te = fmt_score_cell(e_val)
                     
-                    ttot = f'{int(tot_val)}' if tot_val == int(tot_val) else f'{tot_val:.1f}' if tot_val > 0 else ''
-                    tavg = f'{avg_val:.2f}' if avg_val > 0 else ''
+                    if tot_val == 0 or tot_val == 0.0 or pd.isna(tot_val):
+                        ttot = ''
+                    elif tot_val == int(tot_val):
+                        ttot = str(int(tot_val))
+                    else:
+                        ttot = f'{tot_val:.1f}'
+
+                    if avg_val == 0 or avg_val == 0.0 or pd.isna(avg_val):
+                        tavg = ''
+                    elif avg_val == int(avg_val):
+                        tavg = str(int(avg_val))
+                    else:
+                        tavg = f'{avg_val:.2f}'.rstrip('0').rstrip('.')
                     
                     rows_html += f"""<tr>
                         <td class="td-seq">{seq}</td>
