@@ -15,11 +15,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تضمين التنسيقات الخواص بـ CSS والمستوحاة من التصميم الأصلي
+# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS المدمجة من المصدر الاصلي
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
     
+    :root {
+        --primary: #1e3a8a;
+        --primary-light: #3b82f6;
+        --gold: #fbbf24;
+        --green-bg: #dcfce7;
+        --green-text: #15803d;
+        --red-bg: #fee2e2;
+        --red-text: #b91c1c;
+    }
+
     html, body, [class*="css"] {
         font-family: 'Cairo', sans-serif;
         direction: rtl;
@@ -32,9 +43,10 @@ st.markdown("""
         color: white;
         padding: 28px 20px;
         border-radius: 22px;
-        margin-bottom: 22px;
+        margin-bottom: 20px;
         box-shadow: 0 12px 24px rgba(30, 58, 138, 0.18);
         position: relative;
+        overflow: hidden;
     }
     .main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; }
     .main-header p { margin: 0 0 15px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; }
@@ -49,8 +61,33 @@ st.markdown("""
         padding: 8px 24px;
         border-radius: 50px;
         margin-top: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
     }
-    .designer-text { font-size: 18px; font-weight: 800; color: #fbbf24; }
+    .designer-text { font-size: 18px; font-weight: 800; color: var(--gold); }
+    .designer-icon { font-size: 20px; color: var(--gold); }
+
+    .top-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        background: white;
+        padding: 14px 20px;
+        border-radius: 14px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+        border-right: 5px solid var(--primary-light);
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .save-indicator { 
+        font-size: 14px; 
+        color: #10b981; 
+        font-weight: 700; 
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
     .print-class-header {
         display: flex;
@@ -59,20 +96,42 @@ st.markdown("""
         background: #f8fafc;
         padding: 12px 20px;
         border-radius: 12px;
-        border-right: 5px solid #1e3a8a;
+        border-right: 5px solid var(--primary);
         margin-bottom: 15px;
     }
 
-    .metric-card {
-        background: white;
-        border-radius: 14px;
-        padding: 18px;
-        border-top: 5px solid #3b82f6;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        text-align: center;
+    .cards-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+        gap: 15px; 
+        margin-bottom: 20px; 
     }
-    .metric-title { font-size: 15px; font-weight: 700; color: #1e3a8a; margin-bottom: 8px; }
-    .metric-value { font-size: 24px; font-weight: 800; color: #0f172a; }
+    .card { 
+        background: white; 
+        border-radius: 14px; 
+        padding: 18px; 
+        border-top: 5px solid var(--primary-light); 
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03); 
+    }
+    .card-title { 
+        font-size: 16px; 
+        font-weight: 700; 
+        color: var(--primary); 
+        margin-bottom: 10px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+    }
+    .metric-val-big {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+    .badge-excel { background: var(--green-bg); color: var(--green-text); }
+    .badge-good { background: #e0f2fe; color: #0369a1; }
+    .badge-need { background: var(--red-bg); color: var(--red-text); }
 
     .excel-box {
         background-color: #f0fdf4;
@@ -84,14 +143,19 @@ st.markdown("""
     }
 
     @media print {
-        .sidebar, .stButton, header, footer, .no-print {
+        .sidebar, .stButton, header, footer, .no-print, [data-testid="stSidebar"] {
             display: none !important;
         }
-        .print-only {
-            display: block !important;
-        }
         body { background: white !important; color: black !important; }
+        .print-only-header { 
+            display: block !important; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid var(--primary); 
+            padding-bottom: 10px; 
+        }
     }
+    .print-only-header { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -195,10 +259,20 @@ init_db()
 # ---------------------------------------------------------
 st.markdown("""
 <div class="main-header">
-    <h1>نظام رصد الدرجات والرسوم البيانية</h1>
+    <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
-        <span class="designer-text">👑 تصميم وتطوير: متوسطة الثغر النموذجية الأهلية</span>
+        <i class="fa-solid fa-crown designer-icon"></i>
+        <span class="designer-text">تصميم وتطوير: متوسطة الثغر النموذجية الأهلية</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# شريط الحالة العلوي المتضمن للحفظ التلقائي
+st.markdown("""
+<div class="top-toolbar">
+    <div class="save-indicator">
+        <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ التلقائي في قاعدة البيانات (SQLite / Google Sheets)
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -286,19 +360,42 @@ with tab_charts:
         class_stats['avg_score'] = class_stats['avg_score'].round(2)
         class_stats['mastery_pct'] = class_stats['mastery_pct'].round(1)
 
-        # الكروت الإحصائية
+        # الكروت الإحصائية المعززة بالتنسيقات والشارات (Badges)
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         with col_m1:
-            st.markdown(f'<div class="metric-card"><div class="metric-title">مجموع الطلاب</div><div class="metric-value">{len(df_chart_data)}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <div class="card">
+                <div class="card-title"><span>إجمالي الطلاب</span> <i class="fa-solid fa-users" style="color:var(--primary-light);"></i></div>
+                <div class="metric-val-big">{len(df_chart_data)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+            
         with col_m2:
             avg_all = df_chart_data['score'].mean() if not df_chart_data.empty else 0
-            st.markdown(f'<div class="metric-card"><div class="metric-title">المتوسط العام</div><div class="metric-value">{avg_all:.2f} / 10</div></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <div class="card">
+                <div class="card-title"><span>المتوسط العام</span> <i class="fa-solid fa-calculator" style="color:var(--primary-light);"></i></div>
+                <div class="metric-val-big">{avg_all:.2f} <small style="font-size:14px; color:#64748b;">/ 10</small></div>
+            </div>
+            ''', unsafe_allow_html=True)
+            
         with col_m3:
             mastery_all = ((df_chart_data['score'] >= 5.0).sum() / len(df_chart_data) * 100) if not df_chart_data.empty else 0
-            st.markdown(f'<div class="metric-card"><div class="metric-title">نسبة الإتقان العامة</div><div class="metric-value">%{mastery_all:.1f}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <div class="card">
+                <div class="card-title"><span>نسبة الإتقان العامة</span> <span class="badge badge-excel">%</span></div>
+                <div class="metric-val-big">%{mastery_all:.1f}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+            
         with col_m4:
             top_class = class_stats.loc[class_stats['avg_score'].idxmax()]['class_name'] if not class_stats.empty else "-"
-            st.markdown(f'<div class="metric-card"><div class="metric-title">أعلى فصل أداءً</div><div class="metric-value">{top_class}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <div class="card">
+                <div class="card-title"><span>أعلى فصل أداءً</span> <i class="fa-solid fa-trophy" style="color:var(--gold);"></i></div>
+                <div class="metric-val-big">{top_class}</div>
+            </div>
+            ''', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -348,7 +445,7 @@ with tab_grades:
             st.markdown(f"""
             <div class="print-class-header">
                 <div>
-                    <h3 style="margin:0; color:#1e3a8a;">🏫 {current_grade} - {current_class}</h3>
+                    <h3 style="margin:0; color:#1e3a8a;"><i class="fa-solid fa-school"></i> {current_grade} - {current_class}</h3>
                     <small style="color:#64748b;">إجمالي الطلاب المقيدين: {len(df_class_students)} طالب</small>
                 </div>
             </div>
@@ -363,12 +460,26 @@ with tab_grades:
         # جدول رصد الدرجات التفاعلي
         st.write("📝 **جدول درجات طلاب الفصل (تعديل مباشر وحفظ دائم):**")
         
+        # إضافة عمود التقييم الوصفي بالشارات
+        def get_level_badge(score):
+            if score >= 8.5:
+                return "ممتاز 🟢"
+            elif score >= 6.5:
+                return "جيد جداً 🔵"
+            elif score >= 5.0:
+                return "متقن 🟡"
+            else:
+                return "يحتاج دعم 🔴"
+
+        df_class_students['التقييم'] = df_class_students['score'].apply(get_level_badge)
+
         edited_df = st.data_editor(
-            df_class_students[['id', 'student_name', 'score']],
+            df_class_students[['id', 'student_name', 'score', 'التقييم']],
             column_config={
                 "id": st.column_config.NumberColumn("م", disabled=True),
                 "student_name": st.column_config.TextColumn("اسم الطالب", disabled=True),
-                "score": st.column_config.NumberColumn("الدرجة (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f")
+                "score": st.column_config.NumberColumn("الدرجة (من 10)", min_value=0.0, max_value=10.0, step=0.5, format="%.1f"),
+                "التقييم": st.column_config.TextColumn("مستوى الإتقان", disabled=True)
             },
             hide_index=True,
             use_container_width=True,
@@ -391,7 +502,7 @@ with tab_excel:
     with col_imp:
         st.markdown("""
         <div class="excel-box">
-            <h4 style="color:#16a34a; margin-top:0;">📥 رفع واسـتيراد ملف Excel</h4>
+            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> رفع واستيراد ملف Excel</h4>
             <p style="font-size:13px; color:#4b5563;">يمكنك رفع ملف إكسل يحتوي على الأسماء والدرجات لرفعهم دفعة واحدة بدلاً من الرصد اليدوي.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -416,7 +527,7 @@ with tab_excel:
     with col_exp:
         st.markdown("""
         <div class="excel-box" style="background-color:#eff6ff; border-color:#2563eb;">
-            <h4 style="color:#2563eb; margin-top:0;">📤 تصدير البيانات إلى Excel</h4>
+            <h4 style="color:#2563eb; margin-top:0;"><i class="fa-solid fa-download"></i> تصدير البيانات إلى Excel</h4>
             <p style="font-size:13px; color:#4b5563;">تحميل جميع السجلات والدرجات الحالية في ملف إكسل منظم وجاهز للطباعة أو الأرشفة.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -424,7 +535,6 @@ with tab_excel:
         df_current_export = load_data_from_db()
         
         if not df_current_export.empty:
-            # إعداد الأعمدة بشكل عربي مناسب
             df_export_formatted = df_current_export.rename(columns={
                 'id': 'المعرف',
                 'test_name': 'الاختبار',
@@ -477,3 +587,4 @@ with tab_add:
                 save_student_to_db(new_test, new_grade, new_class.strip(), new_student_name.strip(), new_score)
                 st.success(f"تمت إضافة الطالب ({new_student_name}) وحفظ البيانات دائمياً!")
                 st.rerun()
+
