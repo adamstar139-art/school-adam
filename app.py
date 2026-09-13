@@ -1,663 +1,748 @@
-import json
+import io
+import os
+from datetime import date, datetime
+import pandas as pd
 import streamlit as st
 
+# ---------------------------------------------------------
+# 1. إعدادات الصفحة والتصميم المتجاوب
+# ---------------------------------------------------------
 st.set_page_config(
-    page_title="نظام رصد الدرجات والرسوم البيانية - متوسطة الثغر النموذجية الأهلية",
+    page_title="نظام متوسطة الثغر النموذجية",
+    page_icon="🏫",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-html_code = """<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام رصد درجات الاختبار التشخيصي ورسم المقارنات البيانية</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #1e3a8a;
-            --primary-light: #2563eb;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --red-bg: #fee2e2;
-            --red-text: #991b1b;
-            --green-bg: #dcfce7;
-            --green-text: #166534;
-            --gold: #fef08a;
-        }
-        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1350px; margin: 0 auto; }
-        
-        .header {
-            text-align: center;
-            background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6);
-            color: white;
-            padding: 28px 20px;
-            border-radius: 22px;
-            margin-bottom: 22px;
-            box-shadow: 0 12px 24px rgba(30, 58, 138, 0.18);
-            position: relative;
-            overflow: hidden;
-        }
-        .header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; }
-        .header p { margin: 0 0 15px 0; opacity: 0.92; font-size: 15px; }
+STUDENT_ATTENDANCE_FILE = "student_attendance_db.csv"
 
-        .designer-banner {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px);
-            border: 2px solid rgba(255, 255, 255, 0.35);
-            padding: 10px 28px;
-            border-radius: 50px;
-            margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
-        }
-        .designer-text { font-size: 20px; font-weight: 800; color: var(--gold); }
-        .designer-icon { font-size: 22px; color: var(--gold); }
 
-        .top-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+def load_student_attendance():
+    if os.path.exists(STUDENT_ATTENDANCE_FILE):
+        try:
+            return pd.read_csv(STUDENT_ATTENDANCE_FILE, encoding="utf-8-sig")
+        except Exception:
+            pass
+    return pd.DataFrame(
+        columns=[
+            "التاريخ",
+            "اسم المعلم",
+            "الصف",
+            "الفصل",
+            "الحصة",
+            "رقم الطالب",
+            "اسم الطالب",
+            "الحالة",
+        ]
+    )
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #172554; }
-        .btn-success { background: #10b981; color: white; }
 
-        .save-indicator { font-size: 13px; color: #10b981; font-weight: 700; opacity: 0; transition: opacity 0.3s ease; }
-        .save-indicator.active { opacity: 1; }
+def save_student_attendance(new_records):
+    df_existing = load_student_attendance()
+    df_new = pd.DataFrame(new_records)
+    df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+    df_combined.to_csv(
+        STUDENT_ATTENDANCE_FILE, index=False, encoding="utf-8-sig"
+    )
 
-        .main-tabs { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .main-tab-btn {
-            padding: 12px 24px;
-            border: 2px solid var(--primary);
-            background: white;
-            color: var(--primary);
-            font-size: 16px;
-            font-weight: 700;
-            border-radius: 12px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-        .main-tab-btn.active { background: var(--primary); color: white; }
 
-        .class-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 6px; border-radius: 12px; width: fit-content; margin: 0 auto 20px auto; }
-        .class-btn { padding: 8px 20px; border: none; background: transparent; color: #475569; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; }
-        .class-btn.active { background: white; color: var(--primary); }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        .chart-control-panel {
-            background: white;
-            padding: 24px;
-            border-radius: 18px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            border-right: 6px solid var(--primary-light);
-        }
-        .control-row {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 200px;
-            flex: 1;
-        }
-        .control-group label {
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--primary);
-        }
-        .control-select {
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            outline: none;
-            background: #f8fafc;
-        }
-
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background: white; border-radius: 14px; padding: 18px; border-top: 5px solid var(--primary-light); box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-        .card-title { font-size: 17px; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .metric { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-        .badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .badge-excel { background: #dcfce7; color: #15803d; }
-        .badge-good { background: #e0f2fe; color: #0369a1; }
-        .badge-need { background: #fef3c7; color: #b45309; }
-
-        .table-card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-        .table-responsive { overflow-x: auto; max-height: 500px; }
-        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
-        th, td { padding: 10px; border: 1px solid #e2e8f0; }
-        th { background: #f8fafc; color: var(--primary); font-weight: 700; position: sticky; top: 0; z-index: 2; }
-
-        .score-input { width: 58px; text-align: center; padding: 5px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; }
-        .score-low { background-color: var(--red-bg) !important; color: var(--red-text) !important; }
-        .score-high { background-color: var(--green-bg) !important; color: var(--green-text) !important; }
-        .score-zero { background-color: #f1f5f9 !important; color: #64748b !important; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 25px; border-radius: 18px; width: 90%; max-width: 550px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 15px; display: flex; justify-content: space-between; }
-        .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 250px; overflow-y: auto; text-align: right; }
-        .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; }
-
-        @media print {
-            body { background: white; padding: 0; color: black; }
-            .header, .top-toolbar, .main-tabs, .class-tabs, .btn, .modal, .chart-control-panel { display: none !important; }
-            .tab-content { display: block !important; page-break-after: always; }
-            .class-content { display: block !important; page-break-inside: avoid; margin-bottom: 30px; }
-            .card, .table-card { box-shadow: none !important; border: 1px solid #ccc !important; }
-            .score-input { border: none !important; background: transparent !important; }
-            .print-only-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }
-        }
-        .print-only-header { display: none; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header">
-        <h1><i class="fa-solid fa-school ml-2"></i> الاختبار التشخيصي - متوسطة الثغر النموذجية الأهلية</h1>
-        <p>نظام رصد الدرجات التلقائي والرسوم البيانية المقارنة وتقارير PDF</p>
-        <div class="designer-banner">
-            <i class="fa-solid fa-wand-magic-sparkles designer-icon"></i>
-            <span class="designer-text">تصميم الأستاذ: محمد سامي السعيد</span>
-            <i class="fa-solid fa-star designer-icon"></i>
-        </div>
-    </div>
-
-    <div class="top-toolbar">
-        <div class="save-indicator" id="saveIndicator"><i class="fa-solid fa-circle-check"></i> تم الحفظ التلقائي في المتصفح</div>
-        <div>
-            <button class="btn btn-primary" onclick="openPrintModal()"><i class="fa-solid fa-print"></i> طباعة التقرير الشامل (PDF)</button>
-        </div>
-    </div>
-
-    <div class="main-tabs">
-        <button class="main-tab-btn active" onclick="switchMainSection('comparisonTab', this)">
-            <i class="fa-solid fa-chart-column" style="font-size:18px; color:#2563eb;"></i> الرسم البياني للمقارنة
-        </button>
-        <button class="main-tab-btn" onclick="switchMainSection('g1', this)">
-            <i class="fa-solid fa-graduation-cap"></i> الصف الأول المتوسط
-        </button>
-        <button class="main-tab-btn" onclick="switchMainSection('g2', this)">
-            <i class="fa-solid fa-graduation-cap"></i> الصف الثاني المتوسط
-        </button>
-        <button class="main-tab-btn" onclick="switchMainSection('g3', this)">
-            <i class="fa-solid fa-graduation-cap"></i> الصف الثالث المتوسط
-        </button>
-    </div>
-
-    <div id="comparisonTab" class="tab-content active">
-        <div class="chart-control-panel">
-            <h3 style="margin-top:0; color:var(--primary); font-size:20px; display:flex; align-items:center; gap:10px;">
-                <i class="fa-solid fa-chart-line" style="color:#2563eb;"></i> الرسم البياني التفاعلي للمقارنة بين الصفوف والفصول
-            </h3>
-            
-            <div class="control-row">
-                <div class="control-group">
-                    <label><i class="fa-solid fa-layer-group ml-1"></i> اختر الصف الدراسي:</label>
-                    <select id="gradeSelect" class="control-select" onchange="onGradeSelectChange()">
-                        <option value="all">جميع الصفوف (مقارنة شاملة)</option>
-                        <option value="g1">الصف الأول المتوسط</option>
-                        <option value="g2">الصف الثاني المتوسط</option>
-                        <option value="g3">الصف الثالث المتوسط</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label><i class="fa-solid fa-users-rectangle ml-1"></i> اختر الفصل / المقارنة:</label>
-                    <select id="classSelect" class="control-select" onchange="updateComparisonChart()">
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label><i class="fa-solid fa-chart-pie ml-1"></i> نوع المؤشر البياني:</label>
-                    <select id="metricTypeSelect" class="control-select" onchange="updateComparisonChart()">
-                        <option value="avg">متوسط الدرجات (من 10)</option>
-                        <option value="pct">نسبة الإتقان (درجة 5 فما فوق %)</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label><i class="fa-solid fa-chart-simple ml-1"></i> شكل الرسم البياني:</label>
-                    <select id="chartTypeSelect" class="control-select" onchange="updateComparisonChart()">
-                        <option value="bar">أعمدة بيانية (Bar Chart)</option>
-                        <option value="line">منحنى بياني (Line Chart)</option>
-                        <option value="radar">رادار متعدد الأبعاد (Radar)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="chartStatsCards" class="cards-grid"></div>
-
-            <div style="position: relative; height: 380px; width: 100%; margin-top: 20px;">
-                <canvas id="comparisonChartCanvas"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div id="gradesContainer"></div>
-</div>
-
-<div class="modal" id="printModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span><i class="fa-solid fa-file-pdf"></i> خيارات طباعة التقرير الشامل</span>
-            <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closePrintModal()"></i>
-        </div>
-        <p style="font-size:14px; color:#64748b; margin-bottom:15px;">حدد الصفوف والفصول التي تتضمنها التقرير:</p>
-        <div class="checkbox-group" id="printOptionsGroup">
-            <label class="checkbox-item"><input type="checkbox" id="checkAll" onchange="toggleSelectAll(this)" checked> <b>تحديد الكل</b></label>
-            <hr style="width:100%; border:0; border-top:1px solid #eee; margin:5px 0;">
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g1-c1" checked> الصف الأول المتوسط - فصل (1 / 1)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g1-c2" checked> الصف الأول المتوسط - فصل (1 / 2)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g2-c1" checked> الصف الثاني المتوسط - فصل (2 / 1)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g2-c2" checked> الصف الثاني المتوسط - فصل (2 / 2)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g2-c3" checked> الصف الثاني المتوسط - فصل (2 / 3)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g3-c1" checked> الصف الثالث المتوسط - فصل (3 / 1)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g3-c2" checked> الصف الثالث المتوسط - فصل (3 / 2)</label>
-            <label class="checkbox-item"><input type="checkbox" class="print-opt" value="g3-c3" checked> الصف الثالث المتوسط - فصل (3 / 3)</label>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button class="btn" style="background:#cbd5e1; color:#1e293b;" onclick="closePrintModal()">إلغاء</button>
-            <button class="btn btn-success" onclick="executePDFPrint()"><i class="fa-solid fa-file-export"></i> تصدير وطباعة PDF</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let localSaved = localStorage.getItem('althaghr_scores_db_v3');
-    let db = localSaved ? JSON.parse(localSaved) : {"g1": {"c1": [{"name": "بلال عبدالرزاق عيسى العيسى", "s": 5, "m": 0, "l": 5, "e": 4}, {"name": "جاسر بن عبدالله بن منصور المطارحة الحارثي", "s": 4, "m": 0, "l": 3, "e": 1}, {"name": "حسام بن محمد بن علي ال رايان البارقي", "s": 3, "m": 0, "l": 6, "e": 6}, {"name": "ريان عبدالله جابر الاسمري", "s": 4, "m": 0, "l": 6, "e": 3}, {"name": "زيد زياد عبد اللطيف ابو قبع", "s": 6, "m": 0, "l": 5, "e": 6}, {"name": "سامي سعد عباس حمد", "s": 3, "m": 0, "l": 6, "e": 5}, {"name": "سعد ناصر سعد السيف", "s": 3, "m": 0, "l": 2, "e": 4}, {"name": "عبدالله بن سليمان بن عبدالله الراجحي", "s": 4, "m": 0, "l": 0, "e": 4}, {"name": "عبدالله تركي محماس الدوسري", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "عبدالله سعد بن محمد العيشان", "s": 0, "m": 0, "l": 7, "e": 0}, {"name": "علي احمد علي كريري", "s": 4, "m": 0, "l": 5, "e": 2}, {"name": "علي سعد علي القحطاني", "s": 3, "m": 0, "l": 3, "e": 4}, {"name": "عمر عبدالله سعد الجبرين", "s": 2, "m": 0, "l": 1, "e": 4}, {"name": "مازن اسلام احمد ابراهيم موسى", "s": 4, "m": 0, "l": 5, "e": 5}, {"name": "محمد أحمد علي عقيل", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "محمد اسلام محمد دراز", "s": 4, "m": 0, "l": 5, "e": 6}, {"name": "محمد اشرف مسعود ابواخاطر", "s": 0, "m": 0, "l": 0, "e": 7}, {"name": "محمد نايف فراج الدعجاني", "s": 0, "m": 0, "l": 3, "e": 0}, {"name": "وائل - - بولعيش", "s": 0, "m": 0, "l": 0, "e": 5}], "c2": [{"name": "ابراهيم بن محمد بن علي الوهيبي", "s": 3, "m": 0, "l": 1, "e": 2}, {"name": "الوليد ابن خالد بن فهد العتيبي", "s": 5, "m": 0, "l": 6, "e": 9}, {"name": "باسل محمد فرج الدوسري", "s": 6, "m": 0, "l": 7, "e": 4}, {"name": "بسام بن عبدالكريم بن عبدالله الحرقان الدوسري", "s": 4, "m": 0, "l": 3, "e": 0}, {"name": "تركي عبدالله مسفر الدوسري", "s": 5, "m": 0, "l": 5, "e": 4}, {"name": "تميم فهد عبدالعزيز العزاز", "s": 3, "m": 0, "l": 5, "e": 3}, {"name": "راكان عبدالله يحي كريري", "s": 5, "m": 0, "l": 6, "e": 6}, {"name": "ريان عبدالله منصور السبر", "s": 7, "m": 0, "l": 9, "e": 6}, {"name": "ريان وليد - حلاق", "s": 4, "m": 0, "l": 3, "e": 0}, {"name": "سيف عبدالكريم بريك العصيمي", "s": 3, "m": 0, "l": 0, "e": 3}, {"name": "صالح حسن فتحى سندى", "s": 0, "m": 0, "l": 5, "e": 0}, {"name": "عبدالرحمن ابراهيم عبدالله الحضيف", "s": 4, "m": 0, "l": 5, "e": 5}, {"name": "عبدالله صالح حمد الصفيان", "s": 3, "m": 0, "l": 4, "e": 5}, {"name": "فهد ابن احمد بن فهد العثمان", "s": 4, "m": 0, "l": 4, "e": 7}, {"name": "فهد عويض ثعيل المطيري", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "فهد نايف فهد الحسينان", "s": 2, "m": 0, "l": 4, "e": 3}, {"name": "فيصل موينع عبدالله بن موينع", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "فيصل ناصر سيف العريفي", "s": 6, "m": 0, "l": 6, "e": 6}, {"name": "مشاري عثمان سعد ناصر السعد", "s": 3, "m": 0, "l": 3, "e": 7}, {"name": "يزن محمد علي اليحيا", "s": 3, "m": 0, "l": 6, "e": 5}, {"name": "يوسف محمد عبدالله الدوسري", "s": 4, "m": 0, "l": 2, "e": 4}, {"name": "حسام عبدالكريم", "s": 0, "m": 0, "l": 0, "e": 3}]}, "g2": {"c1": [{"name": "ابراهيم ياسر ابراهيم الحلوي", "s": 4, "m": 3, "l": 6, "e": 5}, {"name": "احمد سامي بن احمد العمران", "s": 3, "m": 2, "l": 2, "e": 3}, {"name": "الوليد عبدالله بن ابراهيم المبدل", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "ذياب بن محمد بن ذياب بن محمد ال مريتع القحطاني", "s": 0, "m": 0, "l": 5, "e": 0}, {"name": "راكان سالم بن محمد بن مسفر القحطاني", "s": 5, "m": 3, "l": 2, "e": 0}, {"name": "سلطان عبدالله حسن القحطاني", "s": 3, "m": 2, "l": 0, "e": 2}, {"name": "عبدالرحمن حمد بن محمد العريفي", "s": 0, "m": 0, "l": 3, "e": 0}, {"name": "عبدالرحمن ربيع جابر خبراني", "s": 7, "m": 3, "l": 6, "e": 4}, {"name": "عبدالعزيز سعود بن فهد العتيبي", "s": 4, "m": 3, "l": 3, "e": 3}, {"name": "عبداللطيف ابراهيم محمد الطمره", "s": 2, "m": 2, "l": 5, "e": 3}, {"name": "فهد عيسى محمد العيسى", "s": 3, "m": 2, "l": 2, "e": 1}, {"name": "فيصل بن عبدالله بن سعود بن عبدالعزيز الجميعه", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "مبارك صالح مبارك هليل", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "محمد بن عبدالله بن حمد بن ناصر بن عمران", "s": 2, "m": 0, "l": 2, "e": 3}, {"name": "محمد عبدالمحسن ناصر الحزام", "s": 7, "m": 7, "l": 3, "e": 5}, {"name": "محمد فايز عبدالرحمن بن يوسف", "s": 6, "m": 2, "l": 5, "e": 0}, {"name": "مشاري سلطان سالم الشمراني", "s": 3, "m": 4, "l": 2, "e": 6}, {"name": "معاذ عبدالله سعود العريفي", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "ناصر حسين محمد ال جبران", "s": 0, "m": 3, "l": 4, "e": 0}, {"name": "يزيد بن طارق بن علي الحديثي", "s": 0, "m": 2, "l": 3, "e": 3}, {"name": "يوسف محمد عبدالله الدوسري", "s": 0, "m": 0, "l": 0, "e": 0}], "c2": [{"name": "ابراهيم بن مبارك بن راشد آل موينع", "s": 5, "m": 6, "l": 3, "e": 10}, {"name": "حامد بن محمد بن حامد شباط", "s": 3, "m": 3, "l": 2, "e": 2}, {"name": "حسام حسن محمد الشهري", "s": 6, "m": 4, "l": 4, "e": 5}, {"name": "خالد تركي عايض القحطاني", "s": 3, "m": 2, "l": 5, "e": 2}, {"name": "خالد داود بن عابد الحارثي", "s": 0, "m": 0, "l": 4, "e": 2}, {"name": "سطام عبدالعزيز عبدالله العريفي", "s": 0, "m": 2, "l": 2, "e": 1}, {"name": "سعود خالد عبدالله الحمد", "s": 6, "m": 5, "l": 3, "e": 2}, {"name": "سعود سلطان بن هليل العتيبي", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "سعود مشعل بن ابراهيم الشثري", "s": 3, "m": 2, "l": 2, "e": 10}, {"name": "طلال محمد منير المهدرس", "s": 5, "m": 4, "l": 3, "e": 2}, {"name": "عبدالكريم مساعد عبدالعزيز الهزاع", "s": 1, "m": 3, "l": 1, "e": 1}, {"name": "عبدالله سامي سعد الحوشاني", "s": 3, "m": 5, "l": 1, "e": 4}, {"name": "علي أحمد علي عقيل", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "عمر بن سعد بن هلال الشبانات", "s": 2, "m": 3, "l": 2, "e": 0}, {"name": "عمر خالد عبدالله المهايني", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "فارس مشعل عبدالله بن موينع", "s": 4, "m": 3, "l": 2, "e": 4}, {"name": "مازن خالد دخيل المطيري", "s": 0, "m": 2, "l": 0, "e": 0}, {"name": "مازن رفعت محمد حاج النيل", "s": 4, "m": 5, "l": 4, "e": 5}, {"name": "نايف بن بندر بن خلفان العلوي", "s": 0, "m": 2, "l": 3, "e": 0}, {"name": "نواف عبدالعزيز عبدالله المرزوق", "s": 6, "m": 3, "l": 0, "e": 5}, {"name": "هادي سلطان هادي القحطاني", "s": 1, "m": 2, "l": 2, "e": 1}, {"name": "يزيد بن حسين بن متعب بن محمد كعكم", "s": 0, "m": 0, "l": 4, "e": 0}], "c3": [{"name": "ثامر عمر ابرهيم عثمان", "s": 3, "m": 4, "l": 7, "e": 6}, {"name": "جهاد فارس عبدالقادر حتاوي", "s": 2, "m": 2, "l": 0, "e": 3}, {"name": "خالد محمد عبدالكريم الخفاجي", "s": 4, "m": 0, "l": 0, "e": 0}, {"name": "سعد ابن مسفر بن سعد القحطاني", "s": 5, "m": 2, "l": 0, "e": 3}, {"name": "سعود بن عبدالله بن سعود السحامي", "s": 4, "m": 0, "l": 0, "e": 2}, {"name": "سعود ناصر سيف العريفي", "s": 4, "m": 6, "l": 6, "e": 8}, {"name": "طلال بن فهد بن عطيه بالحكم الزهراني", "s": 7, "m": 3, "l": 7, "e": 6}, {"name": "عبدالرحمن احمد جاسم الحمدي", "s": 4, "m": 5, "l": 0, "e": 0}, {"name": "عبدالعزيز ماجد راشد الزير", "s": 5, "m": 2, "l": 0, "e": 3}, {"name": "عبدالعزيز وليد ناصر بن سعران", "s": 4, "m": 1, "l": 0, "e": 3}, {"name": "عبدالمجيد بن محمد بن مسعود آل عايض القحطاني", "s": 4, "m": 8, "l": 7, "e": 9}, {"name": "عز الدين احمد محمد سعد", "s": 3, "m": 5, "l": 0, "e": 6}, {"name": "عزام خالد شلهوب بن شلهوب", "s": 4, "m": 2, "l": 5, "e": 4}, {"name": "عزام فهد احمد صلوي", "s": 2, "m": 0, "l": 0, "e": 0}, {"name": "عمر وليد ياسين درويش علي", "s": 4, "m": 5, "l": 0, "e": 4}, {"name": "فارس ابن محمد بن سالم بن نويشي الوهبي الحربي", "s": 3, "m": 3, "l": 0, "e": 3}, {"name": "محمد بن علي محسن العثيميني", "s": 1, "m": 3, "l": 4, "e": 0}, {"name": "وائل بن عبدالله بن عامر علي ال عبيد الغامدي", "s": 1, "m": 0, "l": 6, "e": 4}, {"name": "يزيد بن حمد بن مترك بن محمد ال مسعود القحطاني", "s": 2, "m": 0, "l": 0, "e": 0}, {"name": "سعيد محمد بوازير", "s": 0, "m": 2, "l": 0, "e": 0}, {"name": "يوسف البلوي", "s": 8, "m": 6, "l": 6, "e": 7}, {"name": "عبدالله بندر السيف", "s": 5, "m": 2, "l": 5, "e": 2}]}, "g3": {"c1": [{"name": "أصيل ناصر بن محمد مذكور", "s": 3, "m": 3, "l": 0, "e": 2}, {"name": "خالد محمد مسدف معافا", "s": 0, "m": 0, "l": 0, "e": 6}, {"name": "راشد سعيد راشد عبدالسلام", "s": 4, "m": 0, "l": 0, "e": 8}, {"name": "راكان بن عبدالله بن سالم اليافعي", "s": 4, "m": 7, "l": 6, "e": 3}, {"name": "زياد احمد بن علي اللحيد", "s": 3, "m": 0, "l": 0, "e": 1}, {"name": "سطام محمد سعود الدوسري", "s": 5, "m": 5, "l": 0, "e": 3}, {"name": "سلطان احمد صالح الفنتوخ", "s": 6, "m": 4, "l": 6, "e": 6}, {"name": "عبدالعزيز عبدالله شراز المالكي", "s": 5, "m": 0, "l": 0, "e": 6}, {"name": "عبدالعزيز عبدالله عايض الاسمري", "s": 5, "m": 6, "l": 7, "e": 5}, {"name": "عبدالله عبيد عبدالله العتيبي", "s": 2, "m": 4, "l": 4, "e": 2}, {"name": "عبدالله فهد جلوي سالم الشرمي", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "علي ابراهيم علي الاسمري", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "عماد الدين اسلام محمد دراز", "s": 0, "m": 7, "l": 0, "e": 6}, {"name": "عمر فهد محمد السقامي", "s": 4, "m": 2, "l": 0, "e": 0}, {"name": "فهد عبدالرحمن فهد العتيبي", "s": 3, "m": 0, "l": 5, "e": 0}, {"name": "فيصل بن عبدالمحسن بن عايض العصيمي العتيبي", "s": 5, "m": 9, "l": 0, "e": 6}, {"name": "فيصل محمد صالح الفنتوخ", "s": 5, "m": 7, "l": 7, "e": 4}, {"name": "محمد سلطان عبدالعزيز العيد", "s": 4, "m": 5, "l": 0, "e": 3}, {"name": "محمد مقعد ساير العتيبي", "s": 5, "m": 6, "l": 6, "e": 6}, {"name": "مشاري ابراهيم عبداللطيف المغربي", "s": 0, "m": 4, "l": 0, "e": 3}, {"name": "مشاري علي موسى عقيلي", "s": 4, "m": 6, "l": 0, "e": 4}, {"name": "مهند عبدالله فهد الزكري", "s": 6, "m": 4, "l": 7, "e": 6}, {"name": "نواف وليد حمد الشعلان", "s": 5, "m": 6, "l": 5, "e": 5}, {"name": "يوسف نايف مقعد العتيبي", "s": 5, "m": 0, "l": 0, "e": 6}], "c2": [{"name": "تركي عبدالعزيز عبدالله المرزوق", "s": 4, "m": 0, "l": 0, "e": 3}, {"name": "راشد احمد فهد ال سعيد", "s": 0, "m": 0, "l": 0, "e": 2}, {"name": "راكان ابراهيم محمد دبوان", "s": 4, "m": 3, "l": 4, "e": 2}, {"name": "ريان ناصر عبدالرحمن المرشود", "s": 4, "m": 0, "l": 0, "e": 0}, {"name": "صالح بن ممدوح بن صالح بن خالد الجويعي", "s": 3, "m": 0, "l": 0, "e": 0}, {"name": "عبد الرحمن محمد صلاح بدر الدين", "s": 6, "m": 4, "l": 6, "e": 6}, {"name": "عبدالعزيز تركي عبدالعزيز اللهيم", "s": 2, "m": 4, "l": 6, "e": 5}, {"name": "عبدالعزيز عبدالمحسن فهد بن بديع", "s": 0, "m": 6, "l": 0, "e": 0}, {"name": "عبدالله متعب بن عبدالرحمن الجبرين", "s": 4, "m": 7, "l": 7, "e": 4}, {"name": "عبدالمحسن طارق بن عبدالرحمن العروان", "s": 4, "m": 3, "l": 0, "e": 3}, {"name": "فارس وليد بن عبدالله الحوطي", "s": 4, "m": 5, "l": 6, "e": 5}, {"name": "محمد سعد بن محمد العيشان", "s": 4, "m": 0, "l": 0, "e": 2}, {"name": "محمد عبدالعزيز محمد الخالدي", "s": 0, "m": 0, "l": 4, "e": 1}, {"name": "ناصر محمد عبدالله الزريعي", "s": 5, "m": 3, "l": 4, "e": 2}, {"name": "نواف سعد بن علي القاسم", "s": 4, "m": 8, "l": 5, "e": 0}, {"name": "ياسر تركي اسماعيل مسملي", "s": 8, "m": 9, "l": 6, "e": 6}, {"name": "عبد الرحمن الجمعة", "s": 3, "m": 1, "l": 0, "e": 3}, {"name": "تركي العثمان", "s": 4, "m": 4, "l": 0, "e": 6}, {"name": "سلطان الخالدي", "s": 5, "m": 4, "l": 3, "e": 7}, {"name": "مهند كعبي", "s": 5, "m": 5, "l": 4, "e": 2}, {"name": "محمد خالد المشرف", "s": 4, "m": 5, "l": 5, "e": 3}], "c3": [{"name": "ثامر وليد بن عبدالعزيز الطليحي", "s": 2, "m": 3, "l": 0, "e": 2}, {"name": "خالد بن عبدالرؤف بن عبدالرحمن بن عبدالله الشنيبر", "s": 4, "m": 5, "l": 0, "e": 0}, {"name": "خالد عبدالله خالد الخالدي", "s": 4, "m": 7, "l": 5, "e": 3}, {"name": "خالد محمد بن عبدالله ال درعان", "s": 5, "m": 3, "l": 5, "e": 4}, {"name": "راشد صالح بن عبدالعزيز الحلوان", "s": 4, "m": 4, "l": 4, "e": 3}, {"name": "رواد محمد ابراهيم الخليل", "s": 3, "m": 5, "l": 6, "e": 5}, {"name": "صالح بن محمد بن صالح الميموني المطيري", "s": 4, "m": 0, "l": 6, "e": 3}, {"name": "ضاري صالح مهنا العازمي", "s": 2, "m": 3, "l": 0, "e": 3}, {"name": "عبدالرحمن بدر عبدالرحمن الطريقي", "s": 4, "m": 3, "l": 0, "e": 3}, {"name": "عبدالرحمن خالد محمد سعيد", "s": 4, "m": 7, "l": 7, "e": 5}, {"name": "عبدالله عبدالرحمن عبدالله النجراني", "s": 3, "m": 7, "l": 7, "e": 6}, {"name": "علي بن خالد بن علي العجيري", "s": 2, "m": 4, "l": 3, "e": 7}, {"name": "علي عبدالله علي ال حمود", "s": 6, "m": 7, "l": 7, "e": 10}, {"name": "فهد بن خالد بن فهد بن عبدالعزيز الزيد", "s": 3, "m": 2, "l": 6, "e": 2}, {"name": "فيصل عبدالرحمن عزيز القحطاني", "s": 3, "m": 4, "l": 0, "e": 2}, {"name": "ماجد فهد عبدالعزيز الكثيري", "s": 1, "m": 0, "l": 0, "e": 7}, {"name": "مازن خالد عبدربه الزهراني", "s": 4, "m": 4, "l": 8, "e": 5}, {"name": "متعب مطر جمعان الدوسري", "s": 0, "m": 0, "l": 0, "e": 0}, {"name": "نواف فهد بن ناصر القحطاني", "s": 8, "m": 0, "l": 6, "e": 9}, {"name": "يوسف عبدالله عوض العتيبي", "s": 3, "m": 6, "l": 0, "e": 4}, {"name": "عبدالله تركي الاحمد", "s": 4, "m": 6, "l": 0, "e": 7}]}};
-
-    const gradeLabels = {
-        'g1': { title: 'الصف الأول المتوسط', classes: { 'c1': 'فصل (1 / 1)', 'c2': 'فصل (1 / 2)' } },
-        'g2': { title: 'الصف الثاني المتوسط', classes: { 'c1': 'فصل (2 / 1)', 'c2': 'فصل (2 / 2)', 'c3': 'فصل (2 / 3)' } },
-        'g3': { title: 'الصف الثالث المتوسط', classes: { 'c1': 'فصل (3 / 1)', 'c2': 'فصل (3 / 2)', 'c3': 'فصل (3 / 3)' } }
-    };
-
-    const subjKeys = ['s', 'm', 'l', 'e'];
-    const subjNames = {'s': 'العلوم', 'm': 'الرياضيات', 'l': 'لغتي', 'e': 'انجليزي'};
-    let chartInstance = null;
-
-    function saveToLocalStorage() {
-        localStorage.setItem('althaghr_scores_db_v3', JSON.stringify(db));
-        let ind = document.getElementById('saveIndicator');
-        ind.classList.add('active');
-        setTimeout(() => ind.classList.remove('active'), 2000);
-        updateComparisonChart();
+# ---------------------------------------------------------
+# 2. الهوية البصرية وتنسيق الترويسة بدون مسافات بادئة
+# ---------------------------------------------------------
+st.markdown(
+    """
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Cairo', sans-serif;
+        direction: rtl;
+        text-align: right;
     }
-
-    function updateScore(gKey, cKey, stIdx, subj, value, inputElem) {
-        let val = parseFloat(value) || 0;
-        db[gKey][cKey][stIdx][subj] = val;
-        
-        inputElem.className = 'score-input ' + getInputClass(val);
-        
-        let st = db[gKey][cKey][stIdx];
-        let sum = (st.s || 0) + (st.m || 0) + (st.l || 0) + (st.e || 0);
-        let row = inputElem.closest('tr');
-        row.querySelector('.st-sum').innerText = sum;
-
-        saveToLocalStorage();
+    .student-card-box {
+        background-color: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-bottom: 5px;
     }
-
-    function calcMetrics(students, subj) {
-        let total = 0, count = 0, passCount = 0;
-        students.forEach(st => {
-            let score = parseFloat(st[subj]) || 0;
-            total += score;
-            count++;
-            if (score >= 5) passCount++;
-        });
-        let avg = count > 0 ? (total / count).toFixed(1) : '0.0';
-        let pct = count > 0 ? ((passCount / count) * 100).toFixed(1) : '0.0';
-        let effort = 'جهد متوسط ومقبول';
-        let badgeClass = 'badge-good';
-        if (parseFloat(pct) >= 65) { effort = 'جهد متميز ورائع'; badgeClass = 'badge-excel'; }
-        else if (parseFloat(pct) < 40) { effort = 'يتطلب خطة علاجية ودعم مكثف'; badgeClass = 'badge-need'; }
-        return { avg, pct, effort, badgeClass, count, passCount };
+    .student-name-text {
+        font-weight: 700;
+        color: #0F2552;
+        display: block;
     }
-
-    function onGradeSelectChange() {
-        const gVal = document.getElementById('gradeSelect').value;
-        const cSelect = document.getElementById('classSelect');
-        cSelect.innerHTML = '';
-
-        if (gVal === 'all') {
-            cSelect.innerHTML = `
-                <option value="all-grades">مقارنة بين الصفوف الثلاثة</option>
-                <option value="all-classes">مقارنة كافة الفصول (8 فصول)</option>
-            `;
-        } else {
-            const classes = gradeLabels[gVal].classes;
-            cSelect.innerHTML = `<option value="all-in-grade">جميع فصول ${gradeLabels[gVal].title}</option>`;
-            Object.keys(classes).forEach(cKey => {
-                cSelect.innerHTML += `<option value="${cKey}">${classes[cKey]}</option>`;
-            });
-        }
-        updateComparisonChart();
+    .student-id-text {
+        font-size: 12px;
+        color: #64748B;
     }
+    .main-header-container {
+        text-align: center;
+        background: linear-gradient(135deg, #0F2552 0%, #1E3A8A 100%);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .admin-info-box {
+        background-color: #F1F5F9;
+        border-right: 4px solid #C59B27;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        font-size: 13px;
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
-    function updateComparisonChart() {
-        const gVal = document.getElementById('gradeSelect').value;
-        const cVal = document.getElementById('classSelect').value;
-        const metricVal = document.getElementById('metricTypeSelect').value;
-        const chartType = document.getElementById('chartTypeSelect').value;
+thaghar_logo_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 220" width="220" height="96"><g transform="translate(250, 65)"><path d="M-60,-25 C-30,-55 0,-15 0,35 C0,-15 30,-55 60,-25 L50,40 C25,18 0,40 0,40 C0,40 -25,18 -50,40 Z" fill="#0F2552"/><path d="M-90,-5 C-45,-45 0,-5 0,55 C0,-5 45,-45 90,-5 L75,35 C38,10 0,35 0,35 C0,35 -38,10 -75,35 Z" fill="#0F2552" opacity="0.95"/><path d="M0,35 C-25,10 -60,35 -85,15 L-95,25 C-65,50 -25,25 0,52 C25,25 65,50 95,25 L85,15 C60,35 25,10 0,35 Z" fill="#C59B27"/><circle cx="-32" cy="-45" r="11" fill="#0F2552"/><circle cx="32" cy="-45" r="11" fill="#C59B27"/></g><text x="250" y="165" font-family="\'Cairo\', sans-serif" font-size="26" font-weight="800" fill="#FFFFFF" text-anchor="middle">مدارس الثغر النموذجية الأهلية</text><text x="250" y="195" font-family="sans-serif" font-size="14" font-weight="600" fill="#C59B27" text-anchor="middle">Al-Thagher Private Model Schools</text></svg>'
 
-        let labels = ['العلوم', 'الرياضيات', 'لغتي', 'انجليزي'];
-        let datasets = [];
-        let colors = [
-            { bg: 'rgba(37, 99, 235, 0.7)', border: '#1e3a8a' },
-            { bg: 'rgba(16, 185, 129, 0.7)', border: '#047857' },
-            { bg: 'rgba(245, 158, 11, 0.7)', border: '#b45309' },
-            { bg: 'rgba(139, 92, 246, 0.7)', border: '#6d28d9' },
-            { bg: 'rgba(236, 72, 153, 0.7)', border: '#be185d' },
-            { bg: 'rgba(14, 165, 233, 0.7)', border: '#0369a1' },
-            { bg: 'rgba(234, 88, 12, 0.7)', border: '#c2410c' },
-            { bg: 'rgba(20, 184, 166, 0.7)', border: '#0f766e' }
-        ];
+st.markdown(
+    f'<div class="main-header-container">{thaghar_logo_svg}<h3 style="margin-top:10px; color:#FFFFFF;">نظام رصد ومتابعة الحضور والغياب اليومي</h3></div>',
+    unsafe_allow_html=True,
+)
 
-        let statsHtml = '';
+# ---------------------------------------------------------
+# 3. المعلمون والحصص وشجرة الطلاب الكاملة
+# ---------------------------------------------------------
+TEACHERS_LIST = [
+    "محمد سامي السعيد",
+    "علي محمد معوض",
+    "أحمد عبد الحميد سعيد",
+    "محمد عبد المنعم أبو كيلة",
+    "هيثم رضا عطية",
+    "عماد الدين نصر كرم",
+    "السيد الغريب بدوي",
+    "محمد إبراهيم عبد الرحمن",
+    "أسامة أحمد سالم",
+    "عماد بكر عارف",
+    "إبراهيم علي العتيبي",
+    "عيسى خالد العويس",
+    "زيد بن علي التميمي",
+]
+PERIODS_LIST = [f"الحصة {i}" for i in range(1, 8)]
 
-        if (gVal === 'all') {
-            if (cVal === 'all-grades') {
-                ['g1', 'g2', 'g3'].forEach((gKey, idx) => {
-                    let allStudents = [];
-                    Object.keys(db[gKey]).forEach(cKey => allStudents.push(...db[gKey][cKey]));
-                    let data = subjKeys.map(sKey => {
-                        let m = calcMetrics(allStudents, sKey);
-                        return metricVal === 'avg' ? parseFloat(m.avg) : parseFloat(m.pct);
-                    });
-                    datasets.push({
-                        label: gradeLabels[gKey].title,
-                        data: data,
-                        backgroundColor: colors[idx].bg,
-                        borderColor: colors[idx].border,
-                        borderWidth: 2
-                    });
-                });
-            } else {
-                let cIdx = 0;
-                ['g1', 'g2', 'g3'].forEach(gKey => {
-                    Object.keys(db[gKey]).forEach(cKey => {
-                        let students = db[gKey][cKey];
-                        let data = subjKeys.map(sKey => {
-                            let m = calcMetrics(students, sKey);
-                            return metricVal === 'avg' ? parseFloat(m.avg) : parseFloat(m.pct);
-                        });
-                        datasets.push({
-                            label: `${gradeLabels[gKey].title} - ${gradeLabels[gKey].classes[cKey]}`,
-                            data: data,
-                            backgroundColor: colors[cIdx % colors.length].bg,
-                            borderColor: colors[cIdx % colors.length].border,
-                            borderWidth: 2
-                        });
-                        cIdx++;
-                    });
-                });
-            }
-        } else {
-            if (cVal === 'all-in-grade') {
-                let cIdx = 0;
-                Object.keys(db[gVal]).forEach(cKey => {
-                    let students = db[gVal][cKey];
-                    let data = subjKeys.map(sKey => {
-                        let m = calcMetrics(students, sKey);
-                        return metricVal === 'avg' ? parseFloat(m.avg) : parseFloat(m.pct);
-                    });
-                    datasets.push({
-                        label: gradeLabels[gVal].classes[cKey],
-                        data: data,
-                        backgroundColor: colors[cIdx % colors.length].bg,
-                        borderColor: colors[cIdx % colors.length].border,
-                        borderWidth: 2
-                    });
-                    cIdx++;
-                });
-            } else {
-                let students = db[gVal][cVal] || [];
-                let data = subjKeys.map(sKey => {
-                    let m = calcMetrics(students, sKey);
-                    return metricVal === 'avg' ? parseFloat(m.avg) : parseFloat(m.pct);
-                });
-                datasets.push({
-                    label: `${gradeLabels[gVal].title} - ${gradeLabels[gVal].classes[cVal]}`,
-                    data: data,
-                    backgroundColor: ['rgba(37, 99, 235, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(139, 92, 246, 0.7)'],
-                    borderColor: ['#1e3a8a', '#047857', '#b45309', '#6d28d9'],
-                    borderWidth: 2
-                });
-            }
-        }
-
-        subjKeys.forEach(sKey => {
-            let allSt = [];
-            if (gVal === 'all') {
-                ['g1', 'g2', 'g3'].forEach(gk => Object.keys(db[gk]).forEach(ck => allSt.push(...db[gk][ck])));
-            } else if (cVal === 'all-in-grade') {
-                Object.keys(db[gVal]).forEach(ck => allSt.push(...db[gVal][ck]));
-            } else {
-                allSt = db[gVal][cVal] || [];
-            }
-            let m = calcMetrics(allSt, sKey);
-            statsHtml += `
-                <div class="card">
-                    <div class="card-title"><span>${subjNames[sKey]}</span></div>
-                    <div class="metric"><span>المتوسط الحسابي:</span><b>${m.avg} / 10</b></div>
-                    <div class="metric"><span>نسبة الإتقان العامة:</span><b>${m.pct}%</b></div>
-                    <div class="metric"><span>مستوى الأداء:</span><span class="badge ${m.badgeClass}">${m.effort}</span></div>
-                </div>
-            `;
-        });
-        document.getElementById('chartStatsCards').innerHTML = statsHtml;
-
-        const ctx = document.getElementById('comparisonChartCanvas').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-
-        chartInstance = new Chart(ctx, {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: datasets
+STUDENTS_DB = {
+    "الأول المتوسط": {
+        "أول أول (فصل 1)": [
+            {"id": "2395664317", "name": "بلال عبدالرزاق عيسى العيسى"},
+            {
+                "id": "1170970741",
+                "name": "جاسر بن عبدالله بن منصور العطار الحارثي",
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: chartType !== 'radar' ? {
-                    y: {
-                        beginAtZero: true,
-                        max: metricVal === 'avg' ? 10 : 100,
-                        title: { display: true, text: metricVal === 'avg' ? 'المتوسط الحسابي (من 10)' : 'النسبة المئوية (%)' }
-                    }
-                } : {},
-                plugins: {
-                    legend: { position: 'top', labels: { font: { family: 'Tajawal', size: 13, weight: 'bold' } } },
-                    tooltip: { bodyFont: { family: 'Tajawal' }, titleFont: { family: 'Tajawal' } }
-                }
-            }
-        });
-    }
+            {"id": "1170582165", "name": "حسام بن محمد بن علي ال رايان البارقي"},
+            {"id": "1169004353", "name": "ريان عبدالله جابر الأسمري"},
+            {"id": "2446713998", "name": "زيد زياد عبد اللطيف أبو قبع"},
+            {"id": "2527104554", "name": "سامي سعد عباس حمد"},
+            {"id": "1170111759", "name": "سعد ناصر سعد السيف"},
+            {"id": "1153310501", "name": "عبدالله بن سليمان بن عبدالله الراجحي"},
+            {"id": "1170836520", "name": "عبدالله سعد بن محمد العيشان"},
+            {"id": "1171448515", "name": "علي احمد علي كريري"},
+            {"id": "1170853053", "name": "علي سعد علي القحطاني"},
+            {"id": "1172018036", "name": "عمر عبدالله سعد الجبرين"},
+            {"id": "2552851368", "name": "مازن اسلام احمد ابراهيم موسى"},
+            {"id": "013609321", "name": "محمد أحمد علي عقيل"},
+            {"id": "2502333707", "name": "محمد اسلام محمد دراز"},
+            {"id": "2394606749", "name": "محمد اشرف مسعود ابواخطر"},
+            {"id": "1169174164", "name": "محمد نايف فراج الدعجاني"},
+            {"id": "2380890976", "name": "وائل - - بولعيش"},
+        ],
+        "أول ثاني (فصل 2)": [
+            {"id": "1167628468", "name": "ابراهيم بن محمد بن علي الوهيبي"},
+            {"id": "1170348286", "name": "الوليد ابن خالد بن فهد العتيبي"},
+            {"id": "1172433185", "name": "باسل محمد فرج الدوسري"},
+            {
+                "id": "1173391556",
+                "name": "بسام بن عبدالكريم بن عبدالله الحرقان الدوسري",
+            },
+            {"id": "1169185053", "name": "تركي عبدالله مسفر الدوسري"},
+            {"id": "1170108078", "name": "تميم فهد عبدالعزيز العزاز"},
+            {"id": "1168982427", "name": "راكان عبدالله يحيى كريري"},
+            {"id": "1172590968", "name": "ريان عبدالله منصور السبر"},
+            {"id": "2392863888", "name": "ريان وليد - حلاق"},
+            {"id": "1170420473", "name": "سيف عبدالكريم بريك العصيمي"},
+            {"id": "1168942108", "name": "صالح حسن فتحي سندى"},
+            {"id": "1173182138", "name": "عبدالرحمن ابراهيم عبدالله الحضيف"},
+            {"id": "1172448548", "name": "عبدالله صالح حمد الصفيان"},
+            {"id": "1170000945", "name": "فهد ابن احمد بن فهد العثمان"},
+            {"id": "1167092616", "name": "فهد عويض ثعيل المطيري"},
+            {"id": "1170413171", "name": "فهد نايف فهد الحسينان"},
+            {"id": "1170294118", "name": "فيصل موينع عبدالله بن موينع"},
+            {"id": "1171524604", "name": "فيصل ناصر سيف العريفي"},
+            {"id": "1170374993", "name": "مشاري عثمان سعد ناصر السعد"},
+            {"id": "1170884165", "name": "يزن محمد علي البحيح"},
+            {"id": "1170548737", "name": "يوسف محمد عبدالله الدوسري"},
+        ],
+    },
+    "الثاني المتوسط": {
+        "ثاني أول (فصل 1)": [
+            {"id": "1163613795", "name": "ابراهيم ياسر ابراهيم الحلوى"},
+            {"id": "1163760935", "name": "احمد سامي بن احمد العمران"},
+            {"id": "1153756612", "name": "الوليد عبدالله بن ابراهيم المبدل"},
+            {
+                "id": "1164269209",
+                "name": "ذياب بن محمد بن ذياب بن محمد ال مريع القحطاني",
+            },
+            {
+                "id": "1163187972",
+                "name": "راكان سالم بن محمد بن مسفر القحطاني",
+            },
+            {"id": "1167623758", "name": "سلطان عبدالله حسن القحطاني"},
+            {"id": "1164769430", "name": "عبدالرحمن حمد بن محمد العريفي"},
+            {"id": "1167893740", "name": "عبدالرحمن ربيع جابر خبراني"},
+            {"id": "1159740032", "name": "عبدالعزيز سعود بن فهد العتيبي"},
+            {"id": "1164277830", "name": "عبداللطيف ابراهيم محمد الطمره"},
+            {"id": "1162761306", "name": "فهد عيسى محمد العيسى"},
+            {
+                "id": "1160901128",
+                "name": "فيصل بن عبدالله بن سعود بن عبدالعزيز الجميهه",
+            },
+            {"id": "1162168627", "name": "مبارك صالح مبارك هليل"},
+            {
+                "id": "1163212978",
+                "name": "محمد بن عبدالله بن حمد بن ناصر بن عمران",
+            },
+            {"id": "1161858301", "name": "محمد عبدالمحسن ناصر الحزام"},
+            {"id": "1175902442", "name": "محمد فايز عبدالرحمن بن يوسف"},
+            {"id": "1165686179", "name": "مشاري سلطان سالم الشمراني"},
+            {"id": "1166040053", "name": "معاذ عبدالله سعود العريفي"},
+            {"id": "1167081981", "name": "ناصر حسين محمد ال جبران"},
+            {"id": "1163191222", "name": "يزيد بن طارق بن علي الحديثي"},
+        ],
+        "ثاني ثاني (فصل 2)": [
+            {
+                "id": "1166753291",
+                "name": "ابراهيم بن مبارك بن راشد بن عبدالرحمن السبعان آل موينع",
+            },
+            {"id": "1167148251", "name": "حامد بن محمد بن حامد شباط"},
+            {"id": "1164599977", "name": "حسام حسن محمد الشهري"},
+            {"id": "1169057351", "name": "خالد تركي عايض القحطاني"},
+            {"id": "1164120600", "name": "خالد داود بن عابد الحارثي"},
+            {"id": "1165839455", "name": "سطام عبدالعزيز عبدالله العريفي"},
+            {"id": "1171617069", "name": "سعود خالد عبدالله الحمد"},
+            {"id": "1163778960", "name": "سعود سلطان بن خليل العتيبي"},
+            {"id": "1163458878", "name": "سعود مشعل بن ابراهيم الشثري"},
+            {"id": "1166582989", "name": "طلال محمد منير المهدرس"},
+            {"id": "1165143783", "name": "عبدالكريم مساعد عبدالعزيز الهزاع"},
+            {"id": "1165495258", "name": "عبدالله سامي سعد الحوشاني"},
+            {"id": "013609088", "name": "علي أحمد علي عقيل"},
+            {"id": "1164825802", "name": "عمر بن سعد بن هلال الشبانات"},
+            {"id": "3787591993", "name": "عمر خالد عبدالله المهيني"},
+            {"id": "1163537838", "name": "فارس مشعل عبدالله بن موينع"},
+            {"id": "1164997858", "name": "مازن خالد دخيل المطيري"},
+            {"id": "2348937422", "name": "مازن رفعت محمد حاج النيل"},
+            {"id": "1166803245", "name": "نايف بن بندر بن خلفان العلوي"},
+            {"id": "1165668417", "name": "نواف عبدالعزيز مرزوق المرزوق"},
+            {"id": "1164387977", "name": "هادي سلطان هادي القحطاني"},
+            {
+                "id": "1165002153",
+                "name": "يزيد بن حسين بن متعب بن محمد كعكم",
+            },
+        ],
+        "ثاني ثالث (فصل 3)": [
+            {"id": "1166911709", "name": "ثامر عمر ابراهيم عثمان"},
+            {"id": "008464815", "name": "جهاد فارس عبدالقادر حتاوي"},
+            {"id": "1164830562", "name": "خالد محمد عبدالكريم الخفاجي"},
+            {"id": "1188914319", "name": "سعد ابن مسفر بن سعد القحطاني"},
+            {"id": "1165099498", "name": "سعود بن عبدالله بن سعود السحامي"},
+            {"id": "1167770468", "name": "سعود ناصر سنيف العريفي"},
+            {"id": "2344500760", "name": "سعيد محمد - باوزير"},
+            {"id": "1164983874", "name": "طلال بن فهد بن عطيه بالحكم الزهراني"},
+            {"id": "2362260263", "name": "عبدالرحمن احمد جاسم الحمدي"},
+            {"id": "1167153434", "name": "عبدالعزيز ماجد راشد الزير"},
+            {"id": "1164512566", "name": "عبدالعزيز وليد ناصر بن سعران"},
+            {"id": "1167267341", "name": "عبدالله بن بندر بن فهد المسبحي"},
+            {
+                "id": "1164747436",
+                "name": "عبدالمجيد بن محمد بن مسعود آل عايض القحطاني",
+            },
+            {"id": "2358022958", "name": "عز الدين احمد محمد سعد"},
+            {"id": "1167515020", "name": "عزام خالد شهوب بن شهوب"},
+            {"id": "1164747014", "name": "عزام فهد احمد صلوي"},
+            {"id": "4533080448", "name": "عمر وليد ياسين درويش علي"},
+            {
+                "id": "1163397811",
+                "name": "فارس ابن محمد بن سالم بن نويشي الوهبي الحربي",
+            },
+            {"id": "1172720045", "name": "محمد بن علي محسن العثيميني"},
+            {
+                "id": "1171868639",
+                "name": "وائل بن عبدالله بن عامر علي ال عبيد الغامدي",
+            },
+            {
+                "id": "1166629798",
+                "name": "يزيد بن حمد بن مترك بن محمد ال مسعود القحطاني",
+            },
+            {"id": "1167371093", "name": "يوسف عايد عواد البلوي"},
+        ],
+    },
+    "الثالث المتوسط": {
+        "ثالث أول (فصل 1)": [
+            {"id": "1158966166", "name": "أاصيل ناصر بن محمد مذكور"},
+            {"id": "1162308223", "name": "خالد محمد مسدف معافا"},
+            {"id": "1159155223", "name": "راشد سعيد راشد عبدالسلام"},
+            {"id": "1161109093", "name": "راكان بن عبدالله بن سالم اليافعي"},
+            {"id": "1160805899", "name": "زياد احمد بن علي اللحيد"},
+            {"id": "1160267124", "name": "سطام محمد سعود الدوسري"},
+            {"id": "1163270869", "name": "سلطان احمد صالح الفتوح"},
+            {"id": "1160585624", "name": "عبدالعزيز عبدالله شراز المالكي"},
+            {"id": "1160050678", "name": "عبدالعزيز عبدالله عايض الاسمري"},
+            {"id": "1161021314", "name": "عبدالله عبيد عبدالله العتيبي"},
+            {"id": "1160857700", "name": "عبدالله فهد جلوى سالم الشرعي"},
+            {"id": "1161503857", "name": "علي ابراهيم علي الاسْمَري"},
+            {"id": "2502333723", "name": "عماد الدين اسلام محمد دراز"},
+            {"id": "1162454266", "name": "عمر فهد محمد السقامي"},
+            {"id": "1161418593", "name": "فهد عبدالرحمن فهد العتيبي"},
+            {
+                "id": "1163074592",
+                "name": "فيصل بن عبدالمحسن بن عايض العصيمي العتيبي",
+            },
+            {"id": "1165152107", "name": "فيصل محمد صالح الفتوح"},
+            {"id": "1158815876", "name": "محمد سلطان عبدالعزيز العيد"},
+            {"id": "1166075653", "name": "محمد مقعد ساير العتيبي"},
+            {"id": "1160693949", "name": "مشاري ابراهيم عبداللطيف المغربي"},
+            {"id": "1160803878", "name": "مشاري علي موسى عقيلي"},
+            {"id": "1161661846", "name": "مهند عبدالله فهد الزكري"},
+            {"id": "1159404795", "name": "نواف وليد حمد الشعلان"},
+            {"id": "1168385894", "name": "يوسف نايف مقعد العتيبي"},
+        ],
+        "ثالث ثاني (فصل 2)": [
+            {"id": "1156933093", "name": "تركي عبدالعزيز عبدالله المرزوق"},
+            {"id": "1160223317", "name": "تركي عثمان عبدالعزيز العثمان"},
+            {"id": "1159683497", "name": "راشد احمد فهد ال سعيد"},
+            {"id": "2310646332", "name": "راكان ابراهيم محمد ديوان"},
+            {"id": "1161397599", "name": "ريان ناصر عبدالرحمن المرشود"},
+            {
+                "id": "1163112129",
+                "name": "صالح بن ممدوح بن صالح بن خالد الجويعي",
+            },
+            {"id": "2508581135", "name": "عبد الرحمن محمد صلاح بدر الدين"},
+            {"id": "1162188872", "name": "عبدالعزيز تركي عبدالعزيز اللحيم"},
+            {"id": "1161340763", "name": "عبدالعزيز عبدالمحسن فهد بن بديع"},
+            {"id": "1171845140", "name": "عبدالله متعب بن عبدالرحمن الجبرين"},
+            {
+                "id": "1159200318",
+                "name": "عبدالمحسن طارق بن عبدالرحمن العروان",
+            },
+            {"id": "1161333677", "name": "فارس وليد بن عبدالله الحوطي"},
+            {"id": "1162461857", "name": "محمد خالد محمد بن مشرف"},
+            {"id": "1161288897", "name": "محمد سعد بن محمد العيشان"},
+            {"id": "1156334813", "name": "محمد عبدالعزيز محمد الخالدي"},
+            {"id": "1162044851", "name": "مهند ماجد علي كعبي"},
+            {"id": "1158021137", "name": "ناصر محمد عبدالله الزريعي"},
+            {"id": "1161363443", "name": "نواف سعد بن علي القاسم"},
+            {"id": "1162274086", "name": "ياسر تركي اسماعيل مسلمي"},
+        ],
+        "ثالث ثالث (فصل 3)": [
+            {"id": "1163525544", "name": "ثامر وليد بن عبدالعزيز الطليحي"},
+            {
+                "id": "1160712996",
+                "name": "خالد بن عبدالرؤوف بن عبدالرحمن بن عبدالله الشنير",
+            },
+            {"id": "1162560054", "name": "خالد عبدالله خالد الخالدي"},
+            {"id": "1174188647", "name": "خالد محمد بن عبدالله ال درعان"},
+            {"id": "1174226389", "name": "راشد صالح بن عبدالعزيز الحلوان"},
+            {"id": "1167756897", "name": "رواد محمد ابراهيم الخليل"},
+            {
+                "id": "1159394046",
+                "name": "صالح بن محمد بن صالح الميموني المطيري",
+            },
+            {"id": "1161085236", "name": "ضاري صالح مهنا العازمي"},
+            {"id": "1158551372", "name": "عبدالرحمن بدر عبدالرحمن الطريقي"},
+            {"id": "1195815558", "name": "عبدالرحمن خالد محمد سعيد"},
+            {"id": "1158561843", "name": "عبدالله تركي عبدالله الأحمد"},
+            {"id": "1159977451", "name": "عبدالله عبدالرحمن عبدالله النجراني"},
+            {"id": "1162387458", "name": "علي بن خالد بن علي العجيري"},
+            {"id": "1158128270", "name": "علي عبدالله علي ال حمود"},
+            {
+                "id": "1158198604",
+                "name": "فهد بن خالد بن فهد بن عبدالعزيز الزيد",
+            },
+            {"id": "1159551264", "name": "فيصل عبدالرحمن عزيز القحطاني"},
+            {"id": "1162325722", "name": "ماجد فهد عبدالعزيز الكثيري"},
+            {"id": "1171918236", "name": "مازن خالد عبدربه الزهراني"},
+            {"id": "1186515613", "name": "متعب مطر جمعان الدوسري"},
+            {"id": "1159852746", "name": "نواف فهد بن ناصر القحطاني"},
+            {"id": "1163027392", "name": "يوسف عبدالله عوض العتيبي"},
+        ],
+    },
+}
 
-    function switchMainSection(secId, btn) {
-        document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(secId).classList.add('active');
-    }
 
-    function renderApp() {
-        const container = document.getElementById('gradesContainer');
-        container.innerHTML = '';
+# ---------------------------------------------------------
+# 4. دالة تقرير الطباعة الشامل
+# ---------------------------------------------------------
+def generate_printable_html(df_subset, report_title):
+    rows_html = ""
+    for idx, row in enumerate(df_subset.to_dict("records"), 1):
+        status_color = (
+            "#DC2626"
+            if row["الحالة"] == "غائب"
+            else "#D97706"
+            if row["الحالة"] in ["خارج الفصل", "خالد الفصل"]
+            else "#CA8A04"
+            if row["الحالة"] == "متأخر"
+            else "#16A34A"
+        )
+        teacher = row.get("اسم المعلم", "غير محدد")
+        rows_html += f"""
+        <tr>
+            <td>{idx}</td>
+            <td style="text-align: right; direction: rtl;">
+                <b>{row['اسم الطالب']}</b><br>
+                <small style="color: #64748B;">رقم الهوية: {row['رقم الطالب']}</small>
+            </td>
+            <td>{row['الصف']}</td>
+            <td>{row['الفصل']}</td>
+            <td>{row['الحصة']}</td>
+            <td>{teacher}</td>
+            <td style="color: {status_color}; font-weight: bold;">{row['الحالة']}</td>
+        </tr>
+        """
 
-        Object.keys(gradeLabels).forEach((gKey, gIdx) => {
-            const gInfo = gradeLabels[gKey];
-            const gDiv = document.createElement('div');
-            gDiv.id = gKey;
-            gDiv.className = `tab-content`;
+    html_code = f"""
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+    <meta charset="utf-8">
+    <title>{report_title}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        body {{ font-family: 'Cairo', sans-serif; text-align: right; padding: 20px; background-color: #FFFFFF; color: #1E293B; direction: rtl; }}
+        .header {{ text-align: center; border-bottom: 3px solid #0F2552; padding-bottom: 12px; margin-bottom: 20px; }}
+        h2 {{ color: #0F2552; margin: 5px; font-weight: 800; font-size: 22px; }}
+        h4 {{ color: #4B5563; margin: 5px; font-weight: 700; font-size: 16px; }}
+        .info {{ background-color: #F1F5F9; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 700; border: 1px solid #CBD5E1; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+        th, td {{ border: 1px solid #CBD5E1; padding: 10px; text-align: center; font-size: 13px; }}
+        th {{ background-color: #0F2552; color: white; font-weight: 700; }}
+        tr:nth-child(even) {{ background-color: #F8FAFC; }}
+        .footer-credits {{ margin-top: 40px; border-top: 2px solid #E2E8F0; padding-top: 20px; text-align: right; direction: rtl; }}
+        @media print {{ .no-print {{ display: none; }} }}
+    </style>
+    </head>
+    <body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()" style="background-color: #0F2552; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+            🖨️ طباعة التقرير / حفظ كـ PDF
+        </button>
+    </div>
+    <div class="header">
+        <h2>متوسطة الثغر النموذجية الأهلية - بنين</h2>
+        <h4>{report_title}</h4>
+    </div>
+    <div class="info">
+        التاريخ: {date.today()} | إجمالي العدد المرصود: {len(df_subset)} طالب
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th style="text-align: right;">اسم الطالب ورقم الهوية</th>
+                <th>الصف</th>
+                <th>الفصل</th>
+                <th>الحصة</th>
+                <th>اسم المعلم</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows_html}
+        </tbody>
+    </table>
 
-            let cTabsHtml = `<div class="class-tabs">`;
-            Object.keys(gInfo.classes).forEach((cKey, cIdx) => {
-                cTabsHtml += `<button class="class-btn ${cIdx === 0 ? 'active' : ''}" onclick="switchClass('${gKey}-${cKey}', this)">${gInfo.classes[cKey]}</button>`;
-            });
-            cTabsHtml += `</div>`;
-            gDiv.innerHTML += cTabsHtml;
+    <div class="footer-credits">
+        <table style="border: none; width: 100%;">
+            <tr style="background: none;">
+                <td style="border: none; font-weight: bold; text-align: right;">مدير المدرسة: إبراهيم بن موسى التميمي</td>
+                <td style="border: none; font-weight: bold; text-align: right;">وكيل الشؤون التعليمية: محمد مبروك السيد</td>
+                <td style="border: none; font-weight: bold; text-align: right;">وكيل شؤون الطلاب: صالح بن عبدالله الدعجاني</td>
+                <td style="border: none; font-weight: bold; text-align: right; color: #C59B27;">تصميم أ: محمد سامي السعيد</td>
+            </tr>
+        </table>
+    </div>
+    </body>
+    </html>
+    """
+    return html_code
 
-            Object.keys(gInfo.classes).forEach((cKey, cIdx) => {
-                const students = db[gKey][cKey] || [];
-                const cDiv = document.createElement('div');
-                cDiv.id = `${gKey}-${cKey}`;
-                cDiv.className = 'class-content';
-                cDiv.style.display = cIdx === 0 ? 'block' : 'none';
 
-                let cardsHtml = `<div class="cards-grid">`;
-                subjKeys.forEach(sKey => {
-                    let m = calcMetrics(students, sKey);
-                    cardsHtml += `
-                        <div class="card">
-                            <div class="card-title"><span>${subjNames[sKey]}</span></div>
-                            <div class="metric"><span>المتوسط:</span><b>${m.avg} / 10</b></div>
-                            <div class="metric"><span>النسبة المئوية:</span><b>${m.pct}%</b></div>
-                            <div class="metric"><span>جهد المعلم:</span><span class="badge ${m.badgeClass}">${m.effort}</span></div>
-                        </div>
-                    `;
-                });
-                cardsHtml += `</div>`;
+# ---------------------------------------------------------
+# 5. الشريط الجانبي
+# ---------------------------------------------------------
+st.sidebar.title("📌 نظام المتابعة")
+role = st.sidebar.radio(
+    "اختر لوحة التحكم:",
+    [
+        "👨‍🏫 حساب المعلم (رصد الحضور)",
+        "👔 حساب الوكيل والمدير (المتابعة والتصدير)",
+    ],
+)
 
-                let tableHtml = `
-                    <div class="table-card">
-                        <div class="print-only-header">
-                            <h2>المملكة العربية السعودية - وزارة التعليم</h2>
-                            <h3>متوسطة الثغر النموذجية الأهلية - تقرير ${gInfo.title} - ${gInfo.classes[cKey]}</h3>
-                            <p style="font-weight: bold; font-size: 16px;">تصميم الأستاذ: محمد سامي السعيد</p>
-                        </div>
-                        <h3><i class="fa-solid fa-users ml-1"></i> كشف درجات الطلاب (${gInfo.title} - ${gInfo.classes[cKey]})</h3>
-                        <div class="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr><th>#</th><th>اسم الطالب</th><th>علوم</th><th>رياضيات</th><th>لغتي</th><th>انجليزي</th><th>المجموع</th></tr>
-                                </thead>
-                                <tbody>
-                `;
+st.sidebar.markdown(
+    """
+---
+<div class="admin-info-box">
+    <h4 style="margin:0 0 8px 0; color:#0F2552; font-weight:800;">🏛️ الهيكل الإداري والقيادي</h4>
+    <p style="margin:3px 0;"><b>مدير المدرسة:</b> إبراهيم بن موسى التميمي</p>
+    <p style="margin:3px 0;"><b>وكيل الشؤون التعليمية:</b> محمد مبروك السيد</p>
+    <p style="margin:3px 0;"><b>وكيل شؤون الطلاب:</b> صالح بن عبدالله الدعجاني</p>
+    <hr style="margin:8px 0; border:0; border-top:1px solid #CBD5E1;">
+    <p style="margin:3px 0; color:#C59B27; font-weight:700;"><b>تصميم وإعداد:</b> الأستاذ محمد سامي السعيد</p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
-                students.forEach((st, idx) => {
-                    let sum = (st.s || 0) + (st.m || 0) + (st.l || 0) + (st.e || 0);
-                    tableHtml += `
-                        <tr>
-                            <td>${idx + 1}</td>
-                            <td style="text-align: right; font-weight: 700;">${st.name}</td>
-                            <td><input type="number" value="${st.s}" class="score-input ${getInputClass(st.s)}" onchange="updateScore('${gKey}', '${cKey}', ${idx}, 's', this.value, this)"></td>
-                            <td><input type="number" value="${st.m}" class="score-input ${getInputClass(st.m)}" onchange="updateScore('${gKey}', '${cKey}', ${idx}, 'm', this.value, this)"></td>
-                            <td><input type="number" value="${st.l}" class="score-input ${getInputClass(st.l)}" onchange="updateScore('${gKey}', '${cKey}', ${idx}, 'l', this.value, this)"></td>
-                            <td><input type="number" value="${st.e}" class="score-input ${getInputClass(st.e)}" onchange="updateScore('${gKey}', '${cKey}', ${idx}, 'e', this.value, this)"></td>
-                            <td><b class="st-sum">${sum}</b></td>
-                        </tr>
-                    `;
-                });
+# ---------------------------------------------------------
+# 6. واجهة المعلم (رصد الحضور)
+# ---------------------------------------------------------
+if role == "👨‍🏫 حساب المعلم (رصد الحضور)":
+    st.subheader("📋 رصد حضور وغياب الطلاب")
 
-                tableHtml += `</tbody></table></div></div>`;
-                cDiv.innerHTML = cardsHtml + tableHtml;
-                gDiv.appendChild(cDiv);
-            });
+    col_t, col_g, col_s, col_p, col_d = st.columns(5)
+    with col_t:
+        teacher_name = st.selectbox("اسم المعلم:", TEACHERS_LIST)
+    with col_g:
+        grade = st.selectbox("الصف الدراسي:", list(STUDENTS_DB.keys()))
+    with col_s:
+        section = st.selectbox("الفصل:", list(STUDENTS_DB[grade].keys()))
+    with col_p:
+        period = st.selectbox("الحصة:", PERIODS_LIST)
+    with col_d:
+        att_date = st.date_input("التاريخ:", date.today())
 
-            container.appendChild(gDiv);
-        });
+    students_list = STUDENTS_DB[grade][section]
 
-        onGradeSelectChange();
-    }
+    st.info(
+        f"👨‍🏫 **المعلم:** {teacher_name} | 🏫 **الفصل:** {grade} - {section} | ⏰ **الحصة:** {period} | 📅 **التاريخ:** {att_date}"
+    )
+    st.write("---")
 
-    function getInputClass(val) {
-        val = parseFloat(val);
-        if (isNaN(val) || val === 0) return 'score-zero';
-        if (val < 5) return 'score-low';
-        return 'score-high';
-    }
+    attendance_records = {}
 
-    function switchClass(classId, btn) {
-        let parent = btn.closest('.tab-content');
-        parent.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
-        parent.querySelectorAll('.class-content').forEach(c => c.style.display = 'none');
-        btn.classList.add('active');
-        document.getElementById(classId).style.display = 'block';
-    }
+    for idx, student in enumerate(students_list, 1):
+        c_num, c_name, c_status = st.columns([0.5, 3.5, 3])
+        c_num.write(f"**{idx}**")
 
-    function openPrintModal() {
-        document.getElementById('printModal').style.display = 'flex';
-    }
+        c_name.markdown(
+            f"""
+            <div class="student-card-box">
+                <span class="student-name-text">{student['name']}</span>
+                <span class="student-id-text">رقم الهوية: {student['id']}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    function closePrintModal() {
-        document.getElementById('printModal').style.display = 'none';
-    }
-
-    function toggleSelectAll(master) {
-        document.querySelectorAll('.print-opt').forEach(chk => chk.checked = master.checked);
-    }
-
-    function executePDFPrint() {
-        closePrintModal();
-        let selected = [];
-        document.querySelectorAll('.print-opt:checked').forEach(chk => selected.push(chk.value));
-
-        if (selected.length === 0) {
-            alert('الرجاء اختيار فصل واحد على الأقل للطباعة');
-            return;
+        status = c_status.radio(
+            "حالة الحضور:",
+            ["حاضر", "غائب", "خارج الفصل", "متأخر"],
+            key=f"{teacher_name}_{grade}_{section}_{period}_{student['id']}",
+            horizontal=True,
+        )
+        attendance_records[student["id"]] = {
+            "name": student["name"],
+            "status": status,
         }
 
-        document.querySelectorAll('.class-content').forEach(el => {
-            if (selected.includes(el.id)) {
-                el.style.display = 'block';
-                el.closest('.tab-content').style.display = 'block';
-            } else {
-                el.style.display = 'none';
-            }
-        });
+    st.write("---")
+    if st.button(
+        "💾 حفظ وإرسال كشف الحضور", type="primary", use_container_width=True
+    ):
+        new_list = []
+        for st_id, info in attendance_records.items():
+            new_list.append(
+                {
+                    "التاريخ": str(att_date),
+                    "اسم المعلم": teacher_name,
+                    "الصف": grade,
+                    "الفصل": section,
+                    "الحصة": period,
+                    "رقم الطالب": st_id,
+                    "اسم الطالب": info["name"],
+                    "الحالة": info["status"],
+                }
+            )
+        save_student_attendance(new_list)
+        st.success(
+            f"تم حفظ ورصد حضور فصل ({section}) بنجاح في قاعدة البيانات بواسطة المعلم {teacher_name}!"
+        )
 
-        window.print();
-        renderApp();
-    }
+# ---------------------------------------------------------
+# 7. واجهة الوكيل والمدير
+# ---------------------------------------------------------
+else:
+    st.subheader("👔 لوحة الوكيل والمدير (المتابعة الإدارية والتصدير)")
 
-    document.addEventListener('DOMContentLoaded', renderApp);
-</script>
-</body>
-</html>"""
+    st.markdown(
+        """
+    <div style="background-color:#F8FAFC; border:1px solid #E2E8F0; padding:15px; border-radius:10px; margin-bottom:20px;">
+        <h4 style="margin:0 0 10px 0; color:#0F2552;">🏛️ بيانات القيادة الإدارية ومصمم النظام:</h4>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:14px;">
+            <div><b>مدير المدرسة:</b> إبراهيم بن موسى التميمي</div>
+            <div><b>وكيل الشؤون التعليمية:</b> محمد مبروك السيد</div>
+            <div><b>وكيل شؤون الطلاب:</b> صالح بن عبدالله الدعجاني</div>
+            <div style="color:#C59B27;"><b>تصميم أ:</b> محمد سامي السعيد</div>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
-st.components.v1.html(html_code, height=1100, scrolling=True)
+    if "admin_authenticated" not in st.session_state:
+        st.session_state["admin_authenticated"] = False
+
+    if not st.session_state["admin_authenticated"]:
+        st.warning("🔒 يرجى إدخال كلمة المرور للمتابعة:")
+        pwd_input = st.text_input("كلمة المرور:", type="password")
+        if st.button("تسجيل الدخول"):
+            if pwd_input == "adam112233":
+                st.session_state["admin_authenticated"] = True
+                st.success("تم الدخول بنجاح!")
+                st.rerun()
+            else:
+                st.error("كلمة المرور غير صحيحة!")
+    else:
+        if st.button("🚪 تسجيل الخروج من لوحة الإدارة"):
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
+
+        df = load_student_attendance()
+
+        st.markdown("### 🔍 خيارات التصفية الشاملة واستخراج التقارير")
+
+        all_sections_list = []
+        for g_name, g_secs in STUDENTS_DB.items():
+            for s_name in g_secs.keys():
+                if s_name not in all_sections_list:
+                    all_sections_list.append(s_name)
+
+        f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns(5)
+
+        with f_col1:
+            search_status = st.selectbox(
+                "الحالة المراد عرضها:",
+                ["الكل", "غائب", "متأخر", "خارج الفصل", "حاضر"],
+            )
+
+        with f_col2:
+            dates_in_db = (
+                sorted(df["التاريخ"].astype(str).unique().tolist(), reverse=True)
+                if not df.empty
+                else []
+            )
+            available_dates = ["الكل"] + dates_in_db
+            search_date = st.selectbox("التاريخ:", available_dates)
+
+        with f_col3:
+            all_grades = ["الكل"] + list(STUDENTS_DB.keys())
+            search_grade = st.selectbox("الصف الدراسي:", all_grades)
+
+        with f_col4:
+            if search_grade != "الكل":
+                available_sections = ["الكل"] + list(
+                    STUDENTS_DB[search_grade].keys()
+                )
+            else:
+                available_sections = ["الكل"] + all_sections_list
+            search_section = st.selectbox("الفصل:", available_sections)
+
+        with f_col5:
+            all_periods = ["الكل"] + PERIODS_LIST
+            search_period = st.selectbox("الحصة:", all_periods)
+
+        st.write("")
+        btn_start_search = st.button(
+            "🚀 ابدأ البحث / عرض التقرير",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if btn_start_search or "admin_searched" in st.session_state:
+            st.session_state["admin_searched"] = True
+
+            if not df.empty:
+                df_filtered = df.copy()
+
+                if search_status != "الكل":
+                    df_filtered = df_filtered[
+                        df_filtered["الحالة"] == search_status
+                    ]
+
+                if search_date != "الكل":
+                    df_filtered = df_filtered[
+                        df_filtered["التاريخ"].astype(str) == str(search_date)
+                    ]
+
+                if search_grade != "الكل":
+                    df_filtered = df_filtered[
+                        df_filtered["الصف"] == search_grade
+                    ]
+
+                if search_section != "الكل":
+                    df_filtered = df_filtered[
+                        df_filtered["الفصل"] == search_section
+                    ]
+
+                if search_period != "الكل":
+                    df_filtered = df_filtered[
+                        df_filtered["الحصة"] == search_period
+                    ]
+
+                st.write("---")
+                st.markdown(
+                    f"### 📊 نتائج التقرير حسب التصفية (`إجمالي النتائج: {len(df_filtered)} طالب`)"
+                )
+
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(
+                    "🔴 الغائبون",
+                    len(df_filtered[df_filtered["الحالة"] == "غائب"]),
+                )
+                m2.metric(
+                    "🟡 المتأخرون",
+                    len(df_filtered[df_filtered["الحالة"] == "متأخر"]),
+                )
+                m3.metric(
+                    "🟠 خارج الفصل",
+                    len(df_filtered[df_filtered["الحالة"] == "خارج الفصل"]),
+                )
+                m4.metric(
+                    "🟢 الحاضرون",
+                    len(df_filtered[df_filtered["الحالة"] == "حاضر"]),
+                )
+
+                st.dataframe(df_filtered, use_container_width=True)
+
+                if not df_filtered.empty:
+                    title_label = f"تقرير الطلاب ({search_status}) - تاريخ: {search_date}"
+                    html_report = generate_printable_html(
+                        df_filtered, title_label
+                    )
+
+                    c_btn1, c_btn2 = st.columns(2)
+                    c_btn1.download_button(
+                        label="🖨️ فتح صفحة طباعة التقرير التفاعلي وحفظه كـ PDF",
+                        data=html_report.encode("utf-8"),
+                        file_name=f"تقرير_تفاعلي_{date.today()}.html",
+                        mime="text/html",
+                        use_container_width=True,
+                    )
+
+                    c_btn2.download_button(
+                        label="📊 تصدير النتيجة إلى CSV",
+                        data=df_filtered.to_csv(index=False).encode(
+                            "utf-8-sig"
+                        ),
+                        file_name=f"تقرير_مفلتر_{date.today()}.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                    )
+                else:
+                    st.info(
+                        "لا توجد سجلات مرتبطة بالحالة والخيارات التي تم اختيارها."
+                    )
+            else:
+                st.info("لا توجد بيانات حضور مرصودة في قاعدة البيانات حتى الآن.")
