@@ -4,6 +4,14 @@ from datetime import date, datetime
 import pandas as pd
 import streamlit as st
 
+# محاولة استيراد مكتبة Google Sheets من Streamlit
+try:
+    from streamlit_gsheets import GSheetsConnection
+
+    HAS_GSHEETS = True
+except ImportError:
+    HAS_GSHEETS = False
+
 # ---------------------------------------------------------
 # 1. إعدادات الصفحة والتصميم المتجاوب
 # ---------------------------------------------------------
@@ -17,12 +25,26 @@ st.set_page_config(
 STUDENT_ATTENDANCE_FILE = "student_attendance_db.csv"
 
 
+# ---------------------------------------------------------
+# دالة قراءة البيانات (من Google Sheets أولاً ثم النسخة المحلية)
+# ---------------------------------------------------------
 def load_student_attendance():
+    if HAS_GSHEETS:
+        try:
+            conn = st.connection("gsheets", type=GSheetsConnection)
+            df_cloud = conn.read(worksheet="Attendance", ttl=5)
+            if df_cloud is not None and not df_cloud.empty:
+                return df_cloud
+        except Exception:
+            pass
+
+    # في حال تعذر الاتصال بـ Google Sheets يتم الاعتماد على الملف المحلي
     if os.path.exists(STUDENT_ATTENDANCE_FILE):
         try:
             return pd.read_csv(STUDENT_ATTENDANCE_FILE, encoding="utf-8-sig")
         except Exception:
             pass
+
     return pd.DataFrame(
         columns=[
             "التاريخ",
@@ -37,17 +59,30 @@ def load_student_attendance():
     )
 
 
+# ---------------------------------------------------------
+# دالة حفظ البيانات (في Google Sheets والملف المحلي)
+# ---------------------------------------------------------
 def save_student_attendance(new_records):
     df_existing = load_student_attendance()
     df_new = pd.DataFrame(new_records)
     df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+
+    # 1. الحفظ على القرص المحلي دائماً
     df_combined.to_csv(
         STUDENT_ATTENDANCE_FILE, index=False, encoding="utf-8-sig"
     )
 
+    # 2. الحفظ التلقائي في Google Sheets إذا تم ضبط الإعدادات
+    if HAS_GSHEETS:
+        try:
+            conn = st.connection("gsheets", type=GSheetsConnection)
+            conn.update(worksheet="Attendance", data=df_combined)
+        except Exception as e:
+            st.warning(f"تم الحفظ محلياً (تعذر التحديث المباشر في جداول جوجل): {e}")
+
 
 # ---------------------------------------------------------
-# 2. الهوية البصرية وتنسيق الترويسة بدون مسافات بادئة
+# 2. الهوية البصرية وتنسيق الترويسة
 # ---------------------------------------------------------
 st.markdown(
     """
@@ -99,7 +134,7 @@ st.markdown(
 thaghar_logo_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 220" width="220" height="96"><g transform="translate(250, 65)"><path d="M-60,-25 C-30,-55 0,-15 0,35 C0,-15 30,-55 60,-25 L50,40 C25,18 0,40 0,40 C0,40 -25,18 -50,40 Z" fill="#0F2552"/><path d="M-90,-5 C-45,-45 0,-5 0,55 C0,-5 45,-45 90,-5 L75,35 C38,10 0,35 0,35 C0,35 -38,10 -75,35 Z" fill="#0F2552" opacity="0.95"/><path d="M0,35 C-25,10 -60,35 -85,15 L-95,25 C-65,50 -25,25 0,52 C25,25 65,50 95,25 L85,15 C60,35 25,10 0,35 Z" fill="#C59B27"/><circle cx="-32" cy="-45" r="11" fill="#0F2552"/><circle cx="32" cy="-45" r="11" fill="#C59B27"/></g><text x="250" y="165" font-family="\'Cairo\', sans-serif" font-size="26" font-weight="800" fill="#FFFFFF" text-anchor="middle">مدارس الثغر النموذجية الأهلية</text><text x="250" y="195" font-family="sans-serif" font-size="14" font-weight="600" fill="#C59B27" text-anchor="middle">Al-Thagher Private Model Schools</text></svg>'
 
 st.markdown(
-    f'<div class="main-header-container">{thaghar_logo_svg}<h3 style="margin-top:10px; color:#FFFFFF;">نظام رصد ومتابعة الحضور والغياب اليومي</h3></div>',
+    f'<div class="main-header-container">{thaghar_logo_svg}<h3 style="margin-top:10px; color:#FFFFFF;">نظام رصد ومتابعة الحضور والغياب اليومي (سحابي مباشر)</h3></div>',
     unsafe_allow_html=True,
 )
 
@@ -458,7 +493,7 @@ def generate_printable_html(df_subset, report_title):
                 <td style="border: none; font-weight: bold; text-align: right;">مدير المدرسة: إبراهيم بن موسى التميمي</td>
                 <td style="border: none; font-weight: bold; text-align: right;">وكيل الشؤون التعليمية: محمد مبروك السيد</td>
                 <td style="border: none; font-weight: bold; text-align: right;">وكيل شؤون الطلاب: صالح بن عبدالله الدعجاني</td>
-                <td style="border: none; font-weight: bold; text-align: right; color: #C59B27;">تصميم أ: محمد سامي السعيد</td>
+                <td style="border: none; font-weight: bold; text-align: right; color: #C59B27;">تصميم الأستاذ: محمد سامي السعيد</td>
             </tr>
         </table>
     </div>
@@ -471,7 +506,7 @@ def generate_printable_html(df_subset, report_title):
 # ---------------------------------------------------------
 # 5. الشريط الجانبي
 # ---------------------------------------------------------
-st.sidebar.title("📌 نظام المتابعة")
+st.sidebar.title("📌 نظام المتابعة السحابي")
 role = st.sidebar.radio(
     "اختر لوحة التحكم:",
     [
@@ -489,7 +524,7 @@ st.sidebar.markdown(
     <p style="margin:3px 0;"><b>وكيل الشؤون التعليمية:</b> محمد مبروك السيد</p>
     <p style="margin:3px 0;"><b>وكيل شؤون الطلاب:</b> صالح بن عبدالله الدعجاني</p>
     <hr style="margin:8px 0; border:0; border-top:1px solid #CBD5E1;">
-    <p style="margin:3px 0; color:#C59B27; font-weight:700;"><b>تصميم وإعداد:</b> أ محمد سامي السعيد</p>
+    <p style="margin:3px 0; color:#C59B27; font-weight:700;"><b>تصميم وإعداد:</b> الأستاذ محمد سامي السعيد</p>
 </div>
 """,
     unsafe_allow_html=True,
@@ -567,14 +602,14 @@ if role == "👨‍🏫 حساب المعلم (رصد الحضور)":
             )
         save_student_attendance(new_list)
         st.success(
-            f"تم حفظ ورصد حضور فصل ({section}) بنجاح في قاعدة البيانات بواسطة المعلم {teacher_name}!"
+            f"تم حفظ ورصد حضور فصل ({section}) بنجاح وإرساله إلى جداول جوجل السحابية بواسطة المعلم {teacher_name}!"
         )
 
 # ---------------------------------------------------------
 # 7. واجهة الوكيل والمدير
 # ---------------------------------------------------------
 else:
-    st.subheader("👔 لوحة الوكيل والمدير (المتابعة الإدارية والتصدير)")
+    st.subheader("👔 لوحة الوكيل والمدير (المتابعة الإدارية والتصدير السحابي)")
 
     st.markdown(
         """
@@ -584,7 +619,7 @@ else:
             <div><b>مدير المدرسة:</b> إبراهيم بن موسى التميمي</div>
             <div><b>وكيل الشؤون التعليمية:</b> محمد مبروك السيد</div>
             <div><b>وكيل شؤون الطلاب:</b> صالح بن عبدالله الدعجاني</div>
-            <div style="color:#C59B27;"><b>تصميم أ:</b> محمد سامي السعيد</div>
+            <div style="color:#C59B27;"><b>تصميم الأستاذ:</b> محمد سامي السعيد</div>
         </div>
     </div>
     """,
