@@ -6,6 +6,18 @@ import sqlite3
 import io
 
 # ---------------------------------------------------------
+# دالة تنظيف الـ HTML لمنع ظهور كود HTML كـ Markdown Raw Text
+# ---------------------------------------------------------
+def clean_html(html_str):
+    if not html_str:
+        return ""
+    return "\n".join([line.strip() for line in html_str.strip().split("\n")])
+
+def render_html(html_str):
+    st.markdown(clean_html(html_str), unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------
 # 1. تهيئة الصفحة والنمط Visual Theme & Page Config
 # ---------------------------------------------------------
 st.set_page_config(
@@ -16,7 +28,7 @@ st.set_page_config(
 )
 
 # تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS وتعديل اتجاه الجداول وطباعتها
-st.markdown("""
+render_html("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
@@ -181,7 +193,7 @@ st.markdown("""
         .custom-grade-table td { border: 1px solid #000 !important; color: black !important; }
     }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # ---------------------------------------------------------
 # 2. قاعدة بيانات الطلاب الشاملة (172 طالب)
@@ -1937,7 +1949,7 @@ TESTS_LIST = [
 # ---------------------------------------------------------
 # 3. إدارة قاعدة البيانات SQLite
 # ---------------------------------------------------------
-DB_FILE = "student_grades_v8.db"
+DB_FILE = "student_grades_v9.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -2051,7 +2063,7 @@ init_db()
 # ---------------------------------------------------------
 # 4. الهيدر وشريط الأدوات العلوي Main Header
 # ---------------------------------------------------------
-st.markdown("""
+render_html("""
 <div class="main-header">
     <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
@@ -2060,15 +2072,15 @@ st.markdown("""
         <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
-st.markdown("""
+render_html("""
 <div class="top-toolbar">
     <div class="save-indicator">
         <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ الفوري في قاعدة البيانات (SQLite / Google Sheets)
     </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ---------------------------------------------------------
 # 5. القوائم المنسدلة المتسلسلة (اختبار -> صف -> فصل)
@@ -2112,7 +2124,7 @@ with tab_entry:
         st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
     else:
         # دليل التنسيق الشرطي الجمالي
-        st.markdown("""
+        render_html("""
         <div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
             <div class="legend-item">
@@ -2128,7 +2140,7 @@ with tab_entry:
                 <span>بدون درجة / 0 (رصاصي فاتح - خالية)</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
         # خيارات وأوامر الطباعة (بالدرجات / كشف فارغ)
         c_btn1, c_btn2 = st.columns(2)
@@ -2244,7 +2256,7 @@ with tab_entry:
             return html
 
         table_html = build_html_grade_table(df_students, is_blank=show_blank)
-        st.markdown(table_html, unsafe_allow_html=True)
+        render_html(table_html)
 
 # =========================================================
 # التبويب الثاني: الرسم البياني والمقارنة بين عدة فصول
@@ -2338,12 +2350,12 @@ with tab_excel:
     col_exp_box, col_info_box = st.columns(2)
     
     with col_exp_box:
-        st.markdown("""
+        render_html("""
         <div class="excel-box">
             <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> تصدير جميع درجات المواد</h4>
             <p style="font-size:13px; color:#4b5563;">تحميل قاعدة بيانات كافة الصفوف والفصول والمواد الأربع في ملف Excel واحد منسق.</p>
         </div>
-        """, unsafe_allow_html=True)
+        """)
         
         df_all_export = load_all_db_records()
         excel_data = export_to_excel_bytes(df_all_export)
