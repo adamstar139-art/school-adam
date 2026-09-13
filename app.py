@@ -1,21 +1,10 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import sqlite3
 import io
-
-# ---------------------------------------------------------
-# دالة تنظيف الـ HTML لمنع ظهور كود HTML كـ Markdown Raw Text
-# ---------------------------------------------------------
-def clean_html(html_str):
-    if not html_str:
-        return ""
-    return "\n".join([line.strip() for line in html_str.strip().split("\n")])
-
-def render_html(html_str):
-    st.markdown(clean_html(html_str), unsafe_allow_html=True)
-
 
 # ---------------------------------------------------------
 # 1. تهيئة الصفحة والنمط Visual Theme & Page Config
@@ -27,173 +16,208 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS وتعديل اتجاه الجداول وطباعتها
-render_html("""
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS وتعديل اتجاه الجداول وطباعتها بدون أخطاء Txt
+st.markdown("""<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
-    
-    :root {
-        --primary: #1e3a8a;
-        --primary-light: #3b82f6;
-        --gold: #fbbf24;
-        --green-bg: #dcfce7;
-        --green-text: #15803d;
-        --red-bg: #fee2e2;
-        --red-text: #b91c1c;
-        --gray-bg: #e5e7eb;
-        --gray-text: #4b5563;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
 
-    /* فرض اتجاه RTL كاملاً */
-    html, body, [class*="css"], [data-testid="stAppViewContainer"] {
-        font-family: 'Cairo', sans-serif !important;
-        direction: rtl !important;
-        text-align: right !important;
-    }
+:root {
+    --primary: #1e3a8a;
+    --primary-light: #3b82f6;
+    --gold: #fbbf24;
+    --green-bg: #dcfce7;
+    --green-text: #15803d;
+    --red-bg: #fee2e2;
+    --red-text: #b91c1c;
+    --gray-bg: #e5e7eb;
+    --gray-text: #4b5563;
+}
 
-    /* رأس الصفحة والشعار */
-    .main-header {
-        text-align: center;
-        background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6);
-        color: white;
-        padding: 26px 20px;
-        border-radius: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 12px 24px rgba(30, 58, 138, 0.18);
-        position: relative;
-        overflow: hidden;
-    }
-    .main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; }
-    .main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; }
+html, body, [class*="css"], [data-testid="stAppViewContainer"] {
+    font-family: 'Cairo', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+}
 
-    .designer-banner {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(8px);
-        border: 2px solid rgba(255, 255, 255, 0.35);
-        padding: 6px 22px;
-        border-radius: 50px;
-        margin-top: 5px;
-    }
-    .designer-text { font-size: 17px; font-weight: 800; color: var(--gold); }
-    .designer-icon { font-size: 18px; color: var(--gold); }
+.main-header {
+    text-align: center;
+    background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6);
+    color: white;
+    padding: 24px 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 20px rgba(30, 58, 138, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+.main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; }
+.main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; }
 
-    .top-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        background: white;
-        padding: 14px 20px;
-        border-radius: 14px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-        border-right: 5px solid var(--primary-light);
-        flex-wrap: wrap;
-        gap: 10px;
-    }
+.designer-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 6px 22px;
+    border-radius: 50px;
+    margin-top: 5px;
+}
+.designer-text { font-size: 16px; font-weight: 800; color: var(--gold); }
+.designer-icon { font-size: 18px; color: var(--gold); }
 
-    .save-indicator { 
-        font-size: 14px; 
-        color: #10b981; 
-        font-weight: 700; 
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+.top-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    background: white;
+    padding: 14px 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    border-right: 5px solid var(--primary-light);
+    flex-wrap: wrap;
+    gap: 10px;
+    direction: rtl;
+}
 
-    /* دليل الألوان */
+.save-indicator { 
+    font-size: 14px; 
+    color: #10b981; 
+    font-weight: 700; 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-legend {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    direction: rtl;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.color-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.custom-grade-table {
+    width: 100%;
+    border-collapse: collapse;
+    direction: rtl !important;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+    margin-top: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.custom-grade-table th {
+    padding: 12px 8px;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+}
+.th-seq { background-color: #1e3a8a; width: 6%; }
+.th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; }
+.th-sci { background-color: #1e40af; width: 10%; }
+.th-math { background-color: #2563eb; width: 10%; }
+.th-lug { background-color: #3b82f6; width: 10%; }
+.th-eng { background-color: #0284c7; width: 10%; }
+.th-tot { background-color: #0f766e; width: 12%; }
+.th-avg { background-color: #0369a1; width: 12%; }
+
+.custom-grade-table td {
+    padding: 9px 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+.td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; }
+.td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; }
+
+.score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; }
+.score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; }
+.score-zero { background-color: #e5e7eb !important; color: #64748b !important; }
+.score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; }
+
+.excel-box {
+    background-color: #f0fdf4;
+    border: 2px dashed #16a34a;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+@media print {
+    [data-testid="stSidebar"],
+    .stButton,
+    button,
+    header,
+    footer,
+    .no-print,
+    div[role="tablist"],
+    .top-toolbar,
+    [data-testid="stHeader"],
     .color-legend {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        background: #f8fafc;
-        padding: 10px 16px;
-        border-radius: 10px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 15px;
-        flex-wrap: wrap;
+        display: none !important;
     }
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-    .color-box {
-        width: 18px;
-        height: 18px;
-        border-radius: 4px;
-        border: 1px solid rgba(0,0,0,0.1);
+    
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container {
+        display: block !important;
+        visibility: visible !important;
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
     }
 
-    /* جدول العرض المنسق بالألوان مع رؤوس ملونة */
     .custom-grade-table {
-        width: 100%;
-        border-collapse: collapse;
-        direction: rtl;
-        text-align: center;
-        font-family: 'Cairo', sans-serif;
-        margin-top: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        border-radius: 12px;
-        overflow: hidden;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+    }
+    .custom-grade-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    .custom-grade-table th, .custom-grade-table td {
+        border: 1px solid #000 !important;
+        padding: 6px 8px !important;
+        font-size: 11pt !important;
     }
     .custom-grade-table th {
-        padding: 12px 8px;
-        color: white;
-        font-weight: 800;
-        font-size: 14px;
-        border: 1px solid #cbd5e1;
-        text-align: center;
+        background-color: #f1f5f9 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
-    .th-seq { background-color: #1e3a8a; width: 6%; }
-    .th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; }
-    .th-sci { background-color: #1e40af; width: 10%; }
-    .th-math { background-color: #2563eb; width: 10%; }
-    .th-lug { background-color: #3b82f6; width: 10%; }
-    .th-eng { background-color: #0284c7; width: 10%; }
-    .th-tot { background-color: #0f766e; width: 12%; }
-    .th-avg { background-color: #0369a1; width: 12%; }
-    
-    .custom-grade-table td {
-        padding: 9px 8px;
-        border: 1px solid #cbd5e1;
-        font-size: 14px;
-        font-weight: 700;
-        text-align: center;
-    }
-    .td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; }
-    .td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; }
-    
-    .score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; }
-    .score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; }
-    .score-zero { background-color: #e5e7eb !important; color: #64748b !important; }
-    .score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; }
-
-    .excel-box {
-        background-color: #f0fdf4;
-        border: 2px dashed #16a34a;
-        border-radius: 16px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    @media print {
-        .sidebar, .stButton, header, footer, .no-print, [data-testid="stSidebar"], .stTabs {
-            display: none !important;
-        }
-        body { background: white !important; color: black !important; }
-        .custom-grade-table { box-shadow: none !important; border: 1px solid #000 !important; }
-        .custom-grade-table th { color: black !important; background-color: #f1f5f9 !important; border: 1px solid #000 !important; }
-        .custom-grade-table td { border: 1px solid #000 !important; color: black !important; }
-    }
-</style>
-""")
+    .score-green { background-color: #bbf7d0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .score-red { background-color: #fecaca !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .score-zero { background-color: #e5e7eb !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+</style>""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 2. قاعدة بيانات الطلاب الشاملة (172 طالب)
@@ -1921,23 +1945,6 @@ RAW_EXCEL_STUDENTS = [
   }
 ]
 
-TESTS_LIST = [
-    "الاختبار التشخيصي الأول",
-    "الاختبار التشخيصي الثاني",
-    "الاختبار التشخيصي الثالث",
-    "الاختبار التشخيصي الرابع"
-]
-
-STUDENT_STRUCTURE = {
-    "الصف الأول المتوسط": ["فصل 101", "فصل 102"],
-    "الصف الثاني المتوسط": ["فصل 201", "فصل 202", "فصل 203"],
-    "الصف الثالث المتوسط": ["فصل 301", "فصل 302", "فصل 303"]
-}
-
-# ---------------------------------------------------------
-# 3. إدارة قاعدة البيانات SQLite Database Manager
-# ---------------------------------------------------------
-DB_FILE = "student_grades_v7.db"
 
 TESTS_LIST = [
     "الاختبار التشخيصي الأول",
@@ -1947,14 +1954,14 @@ TESTS_LIST = [
 ]
 
 # ---------------------------------------------------------
-# 3. إدارة قاعدة البيانات SQLite
+# 3. إدارة قاعدة البيانات / Database Manager
 # ---------------------------------------------------------
-DB_FILE = "student_grades_v9.db"
+DB_FILE = "student_grades_v10.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("""
+    c.execute('''
         CREATE TABLE IF NOT EXISTS grades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             test_name TEXT,
@@ -1967,7 +1974,7 @@ def init_db():
             lughati REAL DEFAULT 0.0,
             english REAL DEFAULT 0.0
         )
-    """)
+    ''')
     
     c.execute("SELECT COUNT(*) FROM grades")
     if c.fetchone()[0] == 0:
@@ -1995,22 +2002,22 @@ def init_db():
                     0.0, 0.0, 0.0, 0.0
                 ))
                 
-        c.executemany("""
+        c.executemany('''
             INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, initial_rows)
+        ''', initial_rows)
         conn.commit()
     conn.close()
 
 def load_class_students(test_name, grade_name, class_name):
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query("""
+    df = pd.read_sql_query('''
         SELECT id, seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
                science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
         FROM grades
         WHERE test_name = ? AND grade = ? AND class_name = ?
         ORDER BY seq_num ASC
-    """, conn, params=(test_name, grade_name, class_name))
+    ''', conn, params=(test_name, grade_name, class_name))
     conn.close()
     return df
 
@@ -2018,22 +2025,22 @@ def update_student_scores(df_updated):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     for _, row in df_updated.iterrows():
-        c.execute("""
+        c.execute('''
             UPDATE grades
             SET science = ?, math = ?, lughati = ?, english = ?
             WHERE id = ?
-        """, (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
+        ''', (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
     conn.commit()
     conn.close()
 
 def load_all_db_records():
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query("""
+    df = pd.read_sql_query('''
         SELECT id AS 'المعرف', test_name AS 'الاختبار', grade AS 'الصف الدراسي',
                class_name AS 'الفصل', seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
                science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
         FROM grades
-    """, conn)
+    ''', conn)
     conn.close()
     return df
 
@@ -2041,46 +2048,75 @@ def save_new_student(test_name, grade_name, class_name, student_name, s, m, l, e
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT MAX(seq_num) FROM grades WHERE test_name = ? AND grade = ? AND class_name = ?", (test_name, grade_name, class_name))
-    res = c.fetchone()
-    next_seq = (res[0] or 0) + 1 if res else 1
+    row = c.fetchone()
+    next_seq = (row[0] or 0) + 1 if row else 1
     
-    c.execute("""
+    c.execute('''
         INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (test_name, grade_name, class_name, next_seq, student_name, s, m, l, e))
+    ''', (test_name, grade_name, class_name, next_seq, student_name, s, m, l, e))
     conn.commit()
     conn.close()
 
 def export_to_excel_bytes(df_export):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_export.to_excel(writer, index=False, sheet_name='درجات المواد الاربع')
+        df_export.to_excel(writer, index=False, sheet_name='درجات المواد الأربع')
     output.seek(0)
     return output
+
+def save_bulk_excel_to_db(df_excel, default_test):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    count = 0
+    for _, row in df_excel.iterrows():
+        t_name = str(row.get('الاختبار', default_test)).strip()
+        g_name = str(row.get('الصف', 'الصف الأول المتوسط')).strip()
+        c_name = str(row.get('الفصل', 'فصل 101')).strip()
+        s_name = str(row.get('اسم الطالب', '')).strip()
+        
+        try: s_val = float(row.get('علوم', 0.0))
+        except: s_val = 0.0
+        try: m_val = float(row.get('رياضيات', 0.0))
+        except: m_val = 0.0
+        try: l_val = float(row.get('لغتي', 0.0))
+        except: l_val = 0.0
+        try: e_val = float(row.get('انجليزي', 0.0))
+        except: e_val = 0.0
+        
+        if s_name:
+            c.execute("SELECT MAX(seq_num) FROM grades WHERE test_name = ? AND grade = ? AND class_name = ?", (t_name, g_name, c_name))
+            r_seq = c.fetchone()
+            n_seq = (r_seq[0] or 0) + 1 if r_seq else 1
+            
+            c.execute('''
+                INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (t_name, g_name, c_name, n_seq, s_name, s_val, m_val, l_val, e_val))
+            count += 1
+    conn.commit()
+    conn.close()
+    return count
 
 init_db()
 
 # ---------------------------------------------------------
 # 4. الهيدر وشريط الأدوات العلوي Main Header
 # ---------------------------------------------------------
-render_html("""
-<div class="main-header">
+st.markdown("""<div class="main-header">
     <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
         <i class="fa-solid fa-crown designer-icon"></i>
-        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
+        <span class="designer-text">تصميم وتطوير: متوسطة الثغر النموذجية الأهلية</span>
     </div>
-</div>
-""")
+</div>""", unsafe_allow_html=True)
 
-render_html("""
-<div class="top-toolbar">
+st.markdown("""<div class="top-toolbar">
     <div class="save-indicator">
         <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ الفوري في قاعدة البيانات (SQLite / Google Sheets)
     </div>
-</div>
-""")
+</div>""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 5. القوائم المنسدلة المتسلسلة (اختبار -> صف -> فصل)
@@ -2123,9 +2159,7 @@ with tab_entry:
     if df_students.empty:
         st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
     else:
-        # دليل التنسيق الشرطي الجمالي
-        render_html("""
-        <div class="color-legend">
+        st.markdown("""<div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
             <div class="legend-item">
                 <div class="color-box" style="background:#bbf7d0;"></div>
@@ -2139,18 +2173,18 @@ with tab_entry:
                 <div class="color-box" style="background:#e5e7eb;"></div>
                 <span>بدون درجة / 0 (رصاصي فاتح - خالية)</span>
             </div>
-        </div>
-        """)
+        </div>""", unsafe_allow_html=True)
 
-        # خيارات وأوامر الطباعة (بالدرجات / كشف فارغ)
         c_btn1, c_btn2 = st.columns(2)
         
         with c_btn1:
             show_blank = st.checkbox("📝 عرض وطباعة كشف رصد فارغ (بدون درجات للتصحيح الورقي)", value=False)
             
         with c_btn2:
-            if st.button("🖨️ طباعة الجدول الحقيقي للتقرير (PDF / Print)", type="primary"):
-                st.components.v1.html("""<script>window.print();</script>""", height=0)
+            if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
+                st.components.v1.html("""<script>
+                    setTimeout(function() { window.parent.print(); }, 300);
+                </script>""", height=0)
 
         st.write("✏️ **جدول الرصد المنظم والتعديل التفاعلي:**")
 
@@ -2178,32 +2212,14 @@ with tab_entry:
         st.markdown("<hr>", unsafe_allow_html=True)
         st.write("📊 **عرض جدول الرصد المنسق بالكامل (اتجاه اليمين للجميع | رؤوس أعمدة ملونة | درجات بدون أصفار زائدة):**")
 
-        # إنشاء الجدول بدقة بدالة HTML
         def build_html_grade_table(df_data, is_blank=False):
-            html = """
-            <table class="custom-grade-table">
-                <thead>
-                    <tr>
-                        <th class="th-seq">م</th>
-                        <th class="th-name">اسم الطالب</th>
-                        <th class="th-sci">علوم (10)</th>
-                        <th class="th-math">رياضيات (10)</th>
-                        <th class="th-lug">لغتي (10)</th>
-                        <th class="th-eng">انجليزي (10)</th>
-                        <th class="th-tot">المجموع (40)</th>
-                        <th class="th-avg">المتوسط (10)</th>
-                    </tr>
-                </thead>
-                <tbody>
-            """
-            
+            rows_html = ""
             for _, row in df_data.iterrows():
                 seq = row['المسلسل']
                 name = row['اسم الطالب']
                 
                 if is_blank:
-                    html += f"""
-                    <tr>
+                    rows_html += f"""<tr>
                         <td class="td-seq">{seq}</td>
                         <td class="td-name">{name}</td>
                         <td class="score-blank"></td>
@@ -2212,8 +2228,7 @@ with tab_entry:
                         <td class="score-blank"></td>
                         <td class="score-blank"></td>
                         <td class="score-blank"></td>
-                    </tr>
-                    """
+                    </tr>"""
                 else:
                     s_val = row['علوم']
                     m_val = row['رياضيات']
@@ -2224,7 +2239,7 @@ with tab_entry:
                     
                     def fmt_score_cell(v):
                         if pd.isna(v) or v == 0 or v == 0.0:
-                            return 'score-zero', '' # بدون أصفار
+                            return 'score-zero', ''
                         elif v < 5.0:
                             txt = f'{int(v)}' if v == int(v) else f'{v:.1f}'
                             return 'score-red', txt
@@ -2240,8 +2255,7 @@ with tab_entry:
                     ttot = f'{int(tot_val)}' if tot_val == int(tot_val) else f'{tot_val:.1f}' if tot_val > 0 else ''
                     tavg = f'{avg_val:.2f}' if avg_val > 0 else ''
                     
-                    html += f"""
-                    <tr>
+                    rows_html += f"""<tr>
                         <td class="td-seq">{seq}</td>
                         <td class="td-name">{name}</td>
                         <td class="{cs}">{ts}</td>
@@ -2250,13 +2264,29 @@ with tab_entry:
                         <td class="{ce}">{te}</td>
                         <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{ttot}</td>
                         <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{tavg}</td>
+                    </tr>"""
+            
+            table_full = f"""<table class="custom-grade-table">
+                <thead>
+                    <tr>
+                        <th class="th-seq">م</th>
+                        <th class="th-name">اسم الطالب</th>
+                        <th class="th-sci">علوم (10)</th>
+                        <th class="th-math">رياضيات (10)</th>
+                        <th class="th-lug">لغتي (10)</th>
+                        <th class="th-eng">انجليزي (10)</th>
+                        <th class="th-tot">المجموع (40)</th>
+                        <th class="th-avg">المتوسط (10)</th>
                     </tr>
-                    """
-            html += "</tbody></table>"
-            return html
+                </thead>
+                <tbody>
+                    {rows_html}
+                </tbody>
+            </table>"""
+            return table_full
 
-        table_html = build_html_grade_table(df_students, is_blank=show_blank)
-        render_html(table_html)
+        final_table_html = build_html_grade_table(df_students, is_blank=show_blank)
+        st.markdown(final_table_html, unsafe_allow_html=True)
 
 # =========================================================
 # التبويب الثاني: الرسم البياني والمقارنة بين عدة فصول
@@ -2270,46 +2300,44 @@ with tab_charts:
         avail_classes = grades_map[selected_grade]
         selected_classes_compare = st.multiselect(
             "📚 اختر الفصول المراد المقارنة بينها:",
-            options=avail_classes,
+            avail_classes,
             default=avail_classes
         )
-        
+    
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>window.print();</script>""", height=0)
+        if st.button("🖨️ طباعة الرسم البياني (PDF / Print)", type="primary"):
+            st.components.v1.html("""<script>
+                setTimeout(function() { window.parent.print(); }, 300);
+            </script>""", height=0)
 
     if not selected_classes_compare:
-        st.info("يرجى اختيار فصل واحد على الأقل للمقارنة.")
+        st.warning("يرجى اختيار فصل واحد على الأقل للمقارنة.")
     else:
         conn = sqlite3.connect(DB_FILE)
         placeholders = ','.join(['?']*len(selected_classes_compare))
-        query = f"""
-            SELECT class_name,
-                   AVG(science) AS 'علوم',
-                   AVG(math) AS 'رياضيات',
-                   AVG(lughati) AS 'لغتي',
-                   AVG(english) AS 'انجليزي'
+        query = f'''
+            SELECT class_name, AVG(science) AS 'علوم', AVG(math) AS 'رياضيات', AVG(lughati) AS 'لغتي', AVG(english) AS 'انجليزي'
             FROM grades
             WHERE test_name = ? AND grade = ? AND class_name IN ({placeholders})
             GROUP BY class_name
-        """
+        '''
         
         df_comp = pd.read_sql_query(query, conn, params=[selected_test, selected_grade] + selected_classes_compare)
         conn.close()
 
         if df_comp.empty:
-            st.warning("لا توجد بيانات للفصول المختارة.")
+            st.info("لا توجد بيانات متاحة للفصول المختارة.")
         else:
+            df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']] = df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']].round(2)
+            
             df_melted = df_comp.melt(id_vars=['class_name'], var_name='المادة', value_name='متوسط الدرجة')
-            df_melted['متوسط الدرجة'] = df_melted['متوسط الدرجة'].round(2)
-
+            
             chart_shape = st.selectbox(
                 "شكل الرسم البياني للمقارنة:",
-                ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"],
-                index=0
+                ["أعمدة بيانية متجاورة (Grouped Bar)", "منحنى بياني متعدد (Multi-Line)", "مخطط رادار تفاعلي (Radar Chart)"]
             )
-
+            
             if "أعمدة" in chart_shape:
                 fig_comp = px.bar(
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', barmode='group',
@@ -2347,15 +2375,33 @@ with tab_charts:
 with tab_excel:
     st.subheader("🟢 استيراد وتصدير كافة السجلات عبر Excel")
     
-    col_exp_box, col_info_box = st.columns(2)
+    col_exp_box, col_imp_box = st.columns(2)
     
+    with col_imp_box:
+        st.markdown("""<div class="excel-box">
+            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> رفع واستيراد ملف Excel</h4>
+            <p style="font-size:13px; color:#4b5563;">يمكنك رفع ملف إكسل يحتوي على أسماء الطلاب والدرجات لرفعهم دفعة واحدة.</p>
+        </div>""", unsafe_allow_html=True)
+        
+        uploaded_excel = st.file_uploader("اختر ملف Excel (.xlsx / .xls):", type=["xlsx", "xls"])
+        if uploaded_excel is not None:
+            try:
+                df_up = pd.read_excel(uploaded_excel)
+                st.write("🔍 **معاينة البيانات في الملف:**")
+                st.dataframe(df_up.head(10), use_container_width=True)
+                
+                if st.button("🚀 استيراد البيانات إلى البرنامج", type="primary"):
+                    cnt = save_bulk_excel_to_db(df_up, selected_test)
+                    st.success(f"تم استيراد {cnt} طالب بنجاح إلى قاعدة البيانات!")
+                    st.rerun()
+            except Exception as ex:
+                st.error(f"خطأ أثناء رفع الملف: {ex}")
+
     with col_exp_box:
-        render_html("""
-        <div class="excel-box">
-            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> تصدير جميع درجات المواد</h4>
+        st.markdown("""<div class="excel-box" style="background-color:#eff6ff; border-color:#2563eb;">
+            <h4 style="color:#2563eb; margin-top:0;"><i class="fa-solid fa-download"></i> تصدير جميع درجات المواد</h4>
             <p style="font-size:13px; color:#4b5563;">تحميل قاعدة بيانات كافة الصفوف والفصول والمواد الأربع في ملف Excel واحد منسق.</p>
-        </div>
-        """)
+        </div>""", unsafe_allow_html=True)
         
         df_all_export = load_all_db_records()
         excel_data = export_to_excel_bytes(df_all_export)
@@ -2374,7 +2420,7 @@ with tab_excel:
 with tab_add:
     st.subheader("➕ إضافة طالب جديد ورصد درجات المواد له")
     
-    with st.form("add_student_v8_form", clear_on_submit=True):
+    with st.form("add_student_v10_form", clear_on_submit=True):
         f1, f2 = st.columns(2)
         with f1:
             add_t = st.selectbox("الاختبار:", TESTS_LIST, index=TESTS_LIST.index(selected_test))
@@ -2398,7 +2444,6 @@ with tab_add:
                 st.success(f"تمت إضافة الطالب ({add_s_name}) بنجاح إلى {add_c}!")
                 st.rerun()
 
-   
-
+             
     
  
