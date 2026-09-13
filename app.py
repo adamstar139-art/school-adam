@@ -5,6 +5,12 @@ import plotly.express as px
 import sqlite3
 import io
 
+def clean_html(html_str):
+    if not html_str:
+        return ""
+    lines = [line.strip() for line in html_str.strip().splitlines()]
+    return "\n".join([line for line in lines if line])
+
 # ---------------------------------------------------------
 # 1. تهيئة الصفحة والنمط Visual Theme & Page Config
 # ---------------------------------------------------------
@@ -15,18 +21,184 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تضمين مكتبة الأيقونات FontAwesome وتنسيقات CSS وتعديل اتجاه الجداول وطباعتها بدون أخطاء Txt
-st.markdown("""<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><style>@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap'); :root { --primary: #1e3a8a; --primary-light: #3b82f6; --gold: #fbbf24; --green-bg: #dcfce7; --green-text: #15803d; --red-bg: #fee2e2; --red-text: #b91c1c; --gray-bg: #e5e7eb; --gray-text: #4b5563; } html, body, .stApp, header, footer, div, span, label, input, select, button, table, th, td { font-family: 'Cairo', sans-serif !important; direction: rtl !important; text-align: right !important; } .main-header { text-align: center; background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6); color: white; padding: 24px 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(30,58,138,0.15); position: relative; overflow: hidden; } .main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; } .main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; } .designer-banner { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.18); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.4); padding: 6px 22px; border-radius: 50px; margin-top: 5px; } .designer-text { font-size: 16px; font-weight: 800; color: var(--gold); } .designer-icon { font-size: 18px; color: var(--gold); } .top-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 14px 20px; border-radius: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-right: 5px solid var(--primary-light); flex-wrap: wrap; gap: 10px; direction: rtl; } .save-indicator { font-size: 14px; color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 8px; } .color-legend { display: flex; gap: 15px; align-items: center; background: #f8fafc; padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 15px; flex-wrap: wrap; direction: rtl; } .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; } .color-box { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); } .custom-grade-table { width: 100%; border-collapse: collapse; direction: rtl !important; text-align: center; font-family: 'Cairo', sans-serif; margin-top: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; } .custom-grade-table th { padding: 12px 8px; color: white; font-weight: 800; font-size: 14px; border: 1px solid #cbd5e1; text-align: center; } .th-seq { background-color: #1e3a8a; width: 6%; } .th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; } .th-sci { background-color: #1e40af; width: 10%; } .th-math { background-color: #2563eb; width: 10%; } .th-lug { background-color: #3b82f6; width: 10%; } .th-eng { background-color: #0284c7; width: 10%; } .th-tot { background-color: #0f766e; width: 12%; } .th-avg { background-color: #0369a1; width: 12%; } .custom-grade-table td { padding: 9px 8px; border: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; text-align: center; } .td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; } .td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; } .score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; } .score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; } .score-zero { background-color: #e5e7eb !important; color: #64748b !important; } .score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; } .excel-box { background-color: #f0fdf4; border: 2px dashed #16a34a; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; } @media print { [data-testid="stSidebar"], .stButton, button, header, footer, .no-print, div[role="tablist"], .top-toolbar, [data-testid="stHeader"], .color-legend { display: none !important; } html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container { display: block !important; visibility: visible !important; background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; width: 100% !important; } .custom-grade-table { box-shadow: none !important; border: 1px solid #000 !important; font-size: 12pt !important; } .custom-grade-table th { color: black !important; background-color: #f1f5f9 !important; border: 1px solid #000 !important; } .custom-grade-table td { border: 1px solid #000 !important; color: black !important; } .score-green { background-color: #dcfce7 !important; color: black !important; } .score-red { background-color: #fee2e2 !important; color: black !important; } .score-zero { background-color: #f3f4f6 !important; color: black !important; } }</style>""", unsafe_allow_html=True)
+# تضمين التنسيقات الخواص بـ CSS والمستوحاة من التصميم الأصلي (بدون تعليقات CSS لضمان عدم ظهور أسطر نصية)
+css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+:root {
+    --primary: #1e3a8a;
+    --primary-light: #3b82f6;
+    --gold: #fbbf24;
+    --green-bg: #dcfce7;
+    --green-text: #15803d;
+    --red-bg: #fee2e2;
+    --red-text: #b91c1c;
+    --gray-bg: #e5e7eb;
+    --gray-text: #4b5563;
+}
+html, body, [class*="css"], [data-testid="stAppViewContainer"] {
+    font-family: 'Cairo', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+}
+.main-header {
+    text-align: center;
+    background: linear-gradient(135deg, #1e3a8a, #1e40af, #3b82f6);
+    color: white;
+    padding: 24px 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 20px rgba(30, 58, 138, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+.main-header h1 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: #ffffff; }
+.main-header p { margin: 0 0 12px 0; opacity: 0.92; font-size: 15px; color: #e2e8f0; }
+.designer-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 6px 22px;
+    border-radius: 50px;
+    margin-top: 5px;
+}
+.designer-text { font-size: 16px; font-weight: 800; color: var(--gold); }
+.designer-icon { font-size: 18px; color: var(--gold); }
+.top-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    background: white;
+    padding: 14px 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    border-right: 5px solid var(--primary-light);
+    flex-wrap: wrap;
+    gap: 10px;
+    direction: rtl;
+}
+.save-indicator { 
+    font-size: 14px; 
+    color: #10b981; 
+    font-weight: 700; 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.color-legend {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    direction: rtl;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.color-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.custom-grade-table {
+    width: 100%;
+    border-collapse: collapse;
+    direction: rtl !important;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+    margin-top: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.custom-grade-table th {
+    padding: 12px 8px;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+}
+.th-seq { background-color: #1e3a8a; width: 6%; }
+.th-name { background-color: #1e3a8a; width: 30%; text-align: right !important; padding-right: 12px !important; }
+.th-sci { background-color: #1e40af; width: 10%; }
+.th-math { background-color: #2563eb; width: 10%; }
+.th-lug { background-color: #3b82f6; width: 10%; }
+.th-eng { background-color: #0284c7; width: 10%; }
+.th-tot { background-color: #0f766e; width: 12%; }
+.th-avg { background-color: #0369a1; width: 12%; }
+.custom-grade-table td {
+    padding: 9px 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+.td-name { text-align: right !important; padding-right: 12px !important; color: #0f172a; font-weight: 800; }
+.td-seq { text-align: center !important; color: #475569; background-color: #f8fafc; }
+.score-green { background-color: #bbf7d0 !important; color: #166534 !important; font-weight: 800; }
+.score-red { background-color: #fecaca !important; color: #991b1b !important; font-weight: 800; }
+.score-zero { background-color: #e5e7eb !important; color: #64748b !important; }
+.score-blank { background-color: #ffffff !important; color: #000000 !important; height: 35px; }
+.excel-box {
+    background-color: #f0fdf4;
+    border: 2px dashed #16a34a;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+@media print {
+    [data-testid="stSidebar"],
+    .stButton,
+    button,
+    header,
+    footer,
+    .no-print,
+    div[role="tablist"],
+    .top-toolbar,
+    [data-testid="stHeader"],
+    .color-legend {
+        display: none !important;
+    }
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stTabs"], div[role="tabpanel"], .main, .block-container {
+        display: block !important;
+        visibility: visible !important;
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .custom-grade-table { box-shadow: none !important; border: 1px solid #000 !important; }
+    .custom-grade-table th { color: black !important; background-color: #f1f5f9 !important; border: 1px solid #000 !important; }
+    .custom-grade-table td { border: 1px solid #000 !important; color: black !important; }
+}
+</style>"""
+st.markdown(clean_html(css_code), unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. قاعدة بيانات الطلاب الشاملة (172 طالب)
+# 2. قاعدة بيانات الطلاب الشاملة والمطابقة للمصدر والإكسل (167 طالب رسمياً)
 # ---------------------------------------------------------
 RAW_EXCEL_STUDENTS = [
   {
     "seq": 1,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "بلال عبدالرزاق عيسى العيسى",
+    "name": "بلال عبد الرزاق عيسى العيسى",
     "science": 5.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -36,7 +208,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 2,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "جاسر بن عبدالله بن منصور المطارحة الحارثي",
+    "name": "جاسر بن عبد الله بن منصور الحارثي",
     "science": 4.0,
     "math": 0.0,
     "lughati": 3.0,
@@ -56,7 +228,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 4,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "ريان عبدالله جابر الاسمري",
+    "name": "ريان عبد الله جابر الأسمري",
     "science": 4.0,
     "math": 0.0,
     "lughati": 6.0,
@@ -66,7 +238,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 5,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "زيد زياد عبد اللطيف ابو قبع",
+    "name": "زيد زياد عبد اللطيف أبو قبع",
     "science": 6.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -96,17 +268,17 @@ RAW_EXCEL_STUDENTS = [
     "seq": 8,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "عبدالله تركي محماس الدوسري",
+    "name": "عبد الله بن سليمان بن عبد الله الراجحي",
     "science": 0.0,
     "math": 0.0,
-    "lughati": 0.0,
+    "lughati": 7.0,
     "english": 0.0
   },
   {
     "seq": 9,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "عبدالله سعد بن محمد العيشان",
+    "name": "عبد الله سعد بن محمد العيشان",
     "science": 0.0,
     "math": 0.0,
     "lughati": 7.0,
@@ -116,7 +288,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 10,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "علي احمد علي كريري",
+    "name": "علي أحمد علي كريري",
     "science": 4.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -136,7 +308,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 12,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "عمر عبدالله سعد الجبرين",
+    "name": "عمر عبد الله سعد الجبرين",
     "science": 2.0,
     "math": 0.0,
     "lughati": 1.0,
@@ -146,7 +318,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 13,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "مازن اسلام احمد ابراهيم موسى",
+    "name": "مازن إسلام أحمد إبراهيم موسى",
     "science": 4.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -166,7 +338,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 15,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
-    "name": "محمد اسلام محمد دراز",
+    "name": "محمد إسلام محمد دراز",
     "science": 4.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -176,6 +348,16 @@ RAW_EXCEL_STUDENTS = [
     "seq": 16,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
+    "name": "محمد أشرف مسعود أبو خاطر",
+    "science": 4.0,
+    "math": 0.0,
+    "lughati": 5.0,
+    "english": 6.0
+  },
+  {
+    "seq": 17,
+    "grade": "الصف الأول المتوسط",
+    "class": "فصل 101",
     "name": "محمد نايف فراج الدعجاني",
     "science": 0.0,
     "math": 0.0,
@@ -183,7 +365,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 17,
+    "seq": 18,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 101",
     "name": "وائل - - بولعيش",
@@ -193,17 +375,17 @@ RAW_EXCEL_STUDENTS = [
     "english": 5.0
   },
   {
-    "seq": 18,
+    "seq": 1,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "ابراهيم بن محمد بن علي الوهيبي",
+    "name": "إبراهيم بن محمد بن علي الوهيبي",
     "science": 3.0,
     "math": 0.0,
     "lughati": 1.0,
     "english": 2.0
   },
   {
-    "seq": 19,
+    "seq": 2,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "الوليد ابن خالد بن فهد العتيبي",
@@ -213,7 +395,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 9.0
   },
   {
-    "seq": 20,
+    "seq": 3,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "باسل محمد فرج الدوسري",
@@ -223,57 +405,57 @@ RAW_EXCEL_STUDENTS = [
     "english": 4.0
   },
   {
-    "seq": 21,
+    "seq": 4,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "بسام بن عبدالكريم بن عبدالله الحرقان الدوسري",
+    "name": "بسام بن عبد الكريم بن عبد الله الحرقان الدوسري",
     "science": 4.0,
     "math": 0.0,
     "lughati": 3.0,
     "english": 0.0
   },
   {
-    "seq": 22,
+    "seq": 5,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "تركي عبدالله مسفر الدوسري",
+    "name": "تركي عبد الله مسفر الدوسري",
     "science": 5.0,
     "math": 0.0,
     "lughati": 5.0,
     "english": 4.0
   },
   {
-    "seq": 23,
+    "seq": 6,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "تميم فهد عبدالعزيز العزاز",
+    "name": "تميم فهد عبد العزيز العزاز",
     "science": 3.0,
     "math": 0.0,
     "lughati": 5.0,
     "english": 3.0
   },
   {
-    "seq": 24,
+    "seq": 7,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "راكان عبدالله يحي كريري",
+    "name": "راكان عبد الله يحيى كريري",
     "science": 5.0,
     "math": 0.0,
     "lughati": 6.0,
     "english": 6.0
   },
   {
-    "seq": 25,
+    "seq": 8,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "ريان عبدالله منصور السبر",
+    "name": "ريان عبد الله منصور السبر",
     "science": 7.0,
     "math": 0.0,
     "lughati": 9.0,
     "english": 6.0
   },
   {
-    "seq": 26,
+    "seq": 9,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "ريان وليد - حلاق",
@@ -283,57 +465,57 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 27,
+    "seq": 10,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "سيف عبدالكريم بريك العصيمي",
+    "name": "سيف عبد الكريم بريك العصيمي",
     "science": 3.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 28,
+    "seq": 11,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "صالح حسن فتحى سندى",
+    "name": "صالح حسن فتحي سندي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 5.0,
     "english": 0.0
   },
   {
-    "seq": 29,
+    "seq": 12,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "عبدالرحمن ابراهيم عبدالله الحضيف",
+    "name": "عبد الرحمن إبراهيم عبد الله الحضيف",
     "science": 4.0,
     "math": 0.0,
     "lughati": 5.0,
     "english": 5.0
   },
   {
-    "seq": 30,
+    "seq": 13,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "عبدالله صالح حمد الصفيان",
+    "name": "عبد الله صالح حمد الصفيان",
     "science": 3.0,
     "math": 0.0,
     "lughati": 4.0,
     "english": 5.0
   },
   {
-    "seq": 31,
+    "seq": 14,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "فهد ابن احمد بن فهد العثمان",
+    "name": "فهد ابن أحمد بن فهد العثمان",
     "science": 4.0,
     "math": 0.0,
     "lughati": 4.0,
     "english": 7.0
   },
   {
-    "seq": 32,
+    "seq": 15,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "فهد عويض ثعيل المطيري",
@@ -343,7 +525,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 33,
+    "seq": 16,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "فهد نايف فهد الحسينان",
@@ -353,17 +535,17 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 34,
+    "seq": 17,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "فيصل موينع عبدالله بن موينع",
+    "name": "فيصل موينع عبد الله بن موينع",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 35,
+    "seq": 18,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "فيصل ناصر سيف العريفي",
@@ -373,7 +555,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 6.0
   },
   {
-    "seq": 36,
+    "seq": 19,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
     "name": "مشاري عثمان سعد ناصر السعد",
@@ -383,60 +565,30 @@ RAW_EXCEL_STUDENTS = [
     "english": 7.0
   },
   {
-    "seq": 37,
+    "seq": 20,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "يزن محمد علي اليحيا",
+    "name": "يزن محمد علي اليحيى",
     "science": 3.0,
     "math": 0.0,
     "lughati": 6.0,
     "english": 5.0
   },
   {
-    "seq": 38,
+    "seq": 21,
     "grade": "الصف الأول المتوسط",
     "class": "فصل 102",
-    "name": "يوسف محمد عبدالله الدوسري",
+    "name": "يوسف محمد عبد الله الدوسري",
     "science": 4.0,
     "math": 0.0,
     "lughati": 2.0,
     "english": 4.0
   },
   {
-    "seq": 39,
-    "grade": "الصف الأول المتوسط",
-    "class": "فصل 102",
-    "name": "عبدالله الراجحي",
-    "science": 4.0,
-    "math": 0.0,
-    "lughati": 0.0,
-    "english": 4.0
-  },
-  {
-    "seq": 40,
-    "grade": "الصف الأول المتوسط",
-    "class": "فصل 102",
-    "name": "مخمد اشرف",
-    "science": 0.0,
-    "math": 0.0,
-    "lughati": 0.0,
-    "english": 7.0
-  },
-  {
-    "seq": 41,
-    "grade": "الصف الأول المتوسط",
-    "class": "فصل 102",
-    "name": "حسام عبدالكريم",
-    "science": 0.0,
-    "math": 0.0,
-    "lughati": 0.0,
-    "english": 3.0
-  },
-  {
     "seq": 1,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "ابراهيم ياسر ابراهيم الحلوي",
+    "name": "إبراهيم ياسر إبراهيم الحلوى",
     "science": 4.0,
     "math": 3.0,
     "lughati": 6.0,
@@ -446,7 +598,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 2,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "احمد سامي بن احمد العمران",
+    "name": "أحمد سامي بن أحمد العمران",
     "science": 3.0,
     "math": 2.0,
     "lughati": 2.0,
@@ -456,7 +608,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 3,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "الوليد عبدالله بن ابراهيم المبدل",
+    "name": "الوليد عبد الله بن إبراهيم المبدل",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -466,7 +618,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 4,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "ذياب بن محمد بن ذياب بن محمد ال مريتع القحطاني",
+    "name": "ذياب بن محمد بن ذياب بن محمد ال مريع القحطاني",
     "science": 0.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -476,7 +628,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 5,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "راكان سالم بن محمد بن مسفر القحطاني",
+    "name": "راكان بن محمد بن مسفر القحطاني",
     "science": 5.0,
     "math": 3.0,
     "lughati": 2.0,
@@ -486,7 +638,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 6,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "سلطان عبدالله حسن القحطاني",
+    "name": "سلطان عبد الله حسن القحطاني",
     "science": 3.0,
     "math": 2.0,
     "lughati": 0.0,
@@ -496,7 +648,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 7,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "عبدالرحمن حمد بن محمد العريفي",
+    "name": "عبد الرحمن حمد بن محمد العريفي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 3.0,
@@ -506,7 +658,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 8,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "عبدالرحمن ربيع جابر خبراني",
+    "name": "عبد الرحمن ربيع جابر خبراني",
     "science": 7.0,
     "math": 3.0,
     "lughati": 6.0,
@@ -516,7 +668,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 9,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "عبدالعزيز سعود بن فهد العتيبي",
+    "name": "عبد العزيز سعود بن فهد العتيبي",
     "science": 4.0,
     "math": 3.0,
     "lughati": 3.0,
@@ -526,7 +678,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 10,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "عبداللطيف ابراهيم محمد الطمره",
+    "name": "عبد اللطيف إبراهيم محمد الطمره",
     "science": 2.0,
     "math": 2.0,
     "lughati": 5.0,
@@ -546,7 +698,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 12,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "فيصل بن عبدالله بن سعود بن عبدالعزيز الجميعه",
+    "name": "فيصل بن عبد الله بن سعود بن عبد العزيز الجميهه",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -566,7 +718,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 14,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "محمد بن عبدالله بن حمد بن ناصر بن عمران",
+    "name": "محمد بن عبد الله بن حمد بن ناصر بن عمران",
     "science": 2.0,
     "math": 0.0,
     "lughati": 2.0,
@@ -576,7 +728,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 15,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "محمد عبدالمحسن ناصر الحزام",
+    "name": "محمد عبد المحسن ناصر الحزام",
     "science": 7.0,
     "math": 7.0,
     "lughati": 3.0,
@@ -586,7 +738,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 16,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "محمد فايز عبدالرحمن بن يوسف",
+    "name": "محمد فايز عبد الرحمن بن يوسف",
     "science": 6.0,
     "math": 2.0,
     "lughati": 5.0,
@@ -606,7 +758,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 18,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 201",
-    "name": "معاذ عبدالله سعود العريفي",
+    "name": "معاذ عبد الله سعود العريفي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -633,27 +785,17 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 21,
-    "grade": "الصف الثاني المتوسط",
-    "class": "فصل 201",
-    "name": "يوسف محمد عبدالله الدوسري",
-    "science": 0.0,
-    "math": 0.0,
-    "lughati": 0.0,
-    "english": 0.0
-  },
-  {
-    "seq": 22,
+    "seq": 1,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "ابراهيم بن مبارك بن راشد آل موينع",
+    "name": "إبراهيم بن مبارك بن راشد بن عبد الرحمن السبيعي آل موينع",
     "science": 5.0,
     "math": 6.0,
     "lughati": 3.0,
     "english": 10.0
   },
   {
-    "seq": 23,
+    "seq": 2,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "حامد بن محمد بن حامد شباط",
@@ -663,7 +805,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 2.0
   },
   {
-    "seq": 24,
+    "seq": 3,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "حسام حسن محمد الشهري",
@@ -673,7 +815,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 5.0
   },
   {
-    "seq": 25,
+    "seq": 4,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "خالد تركي عايض القحطاني",
@@ -683,7 +825,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 2.0
   },
   {
-    "seq": 26,
+    "seq": 5,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "خالد داود بن عابد الحارثي",
@@ -693,47 +835,47 @@ RAW_EXCEL_STUDENTS = [
     "english": 2.0
   },
   {
-    "seq": 27,
+    "seq": 6,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "سطام عبدالعزيز عبدالله العريفي",
+    "name": "سطام عبد العزيز عبد الله العريفي",
     "science": 0.0,
     "math": 2.0,
     "lughati": 2.0,
     "english": 1.0
   },
   {
-    "seq": 28,
+    "seq": 7,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "سعود خالد عبدالله الحمد",
+    "name": "سعود خالد عبد الله الحمد",
     "science": 6.0,
     "math": 5.0,
     "lughati": 3.0,
     "english": 2.0
   },
   {
-    "seq": 29,
+    "seq": 8,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "سعود سلطان بن هليل العتيبي",
+    "name": "سعود سلطان بن خليل العتيبي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 30,
+    "seq": 9,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "سعود مشعل بن ابراهيم الشثري",
+    "name": "سعود مشعل بن إبراهيم الشثري",
     "science": 3.0,
     "math": 2.0,
     "lughati": 2.0,
     "english": 10.0
   },
   {
-    "seq": 31,
+    "seq": 10,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "طلال محمد منير المهدرس",
@@ -743,27 +885,27 @@ RAW_EXCEL_STUDENTS = [
     "english": 2.0
   },
   {
-    "seq": 32,
+    "seq": 11,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "عبدالكريم مساعد عبدالعزيز الهزاع",
+    "name": "عبد الكريم مساعد عبد العزيز الهزاع",
     "science": 1.0,
     "math": 3.0,
     "lughati": 1.0,
     "english": 1.0
   },
   {
-    "seq": 33,
+    "seq": 12,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "عبدالله سامي سعد الحوشاني",
+    "name": "عبد الله سامي سعد الحوشاني",
     "science": 3.0,
     "math": 5.0,
     "lughati": 1.0,
     "english": 4.0
   },
   {
-    "seq": 34,
+    "seq": 13,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "علي أحمد علي عقيل",
@@ -773,7 +915,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 35,
+    "seq": 14,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "عمر بن سعد بن هلال الشبانات",
@@ -783,27 +925,27 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 36,
+    "seq": 15,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "عمر خالد عبدالله المهايني",
+    "name": "عمر خالد عبد الله المهيني",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 37,
+    "seq": 16,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "فارس مشعل عبدالله بن موينع",
+    "name": "فارس مشعل عبد الله بن موينع",
     "science": 4.0,
     "math": 3.0,
     "lughati": 2.0,
     "english": 4.0
   },
   {
-    "seq": 38,
+    "seq": 17,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "مازن خالد دخيل المطيري",
@@ -813,7 +955,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 39,
+    "seq": 18,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "مازن رفعت محمد حاج النيل",
@@ -823,7 +965,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 5.0
   },
   {
-    "seq": 40,
+    "seq": 19,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "نايف بن بندر بن خلفان العلوي",
@@ -833,17 +975,17 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 41,
+    "seq": 20,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
-    "name": "نواف عبدالعزيز عبدالله المرزوق",
+    "name": "نواف عبد العزيز المرزوق",
     "science": 6.0,
     "math": 3.0,
     "lughati": 0.0,
     "english": 5.0
   },
   {
-    "seq": 42,
+    "seq": 21,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "هادي سلطان هادي القحطاني",
@@ -853,7 +995,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 1.0
   },
   {
-    "seq": 43,
+    "seq": 22,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 202",
     "name": "يزيد بن حسين بن متعب بن محمد كعكم",
@@ -863,37 +1005,37 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 44,
+    "seq": 1,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "ثامر عمر ابرهيم عثمان",
+    "name": "ثامر عمر إبراهيم عثمان",
     "science": 3.0,
     "math": 4.0,
     "lughati": 7.0,
     "english": 6.0
   },
   {
-    "seq": 45,
+    "seq": 2,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "جهاد فارس عبدالقادر حتاوي",
+    "name": "جهاد فارس عبد القادر حتاوي",
     "science": 2.0,
     "math": 2.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 46,
+    "seq": 3,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "خالد محمد عبدالكريم الخفاجي",
+    "name": "خالد محمد عبد الكريم الخفاجي",
     "science": 4.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 47,
+    "seq": 4,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "سعد ابن مسفر بن سعد القحطاني",
@@ -903,27 +1045,37 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 48,
+    "seq": 5,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "سعود بن عبدالله بن سعود السحامي",
+    "name": "سعود بن عبد الله بن سعود السحامي",
     "science": 4.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 2.0
   },
   {
-    "seq": 49,
+    "seq": 6,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "سعود ناصر سيف العريفي",
+    "name": "سعود ناصر سنيف العريفي",
     "science": 4.0,
     "math": 6.0,
     "lughati": 6.0,
     "english": 8.0
   },
   {
-    "seq": 50,
+    "seq": 7,
+    "grade": "الصف الثاني المتوسط",
+    "class": "فصل 203",
+    "name": "سعيد محمد - باوزير",
+    "science": 0.0,
+    "math": 2.0,
+    "lughati": 0.0,
+    "english": 0.0
+  },
+  {
+    "seq": 8,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "طلال بن فهد بن عطيه بالحكم الزهراني",
@@ -933,77 +1085,87 @@ RAW_EXCEL_STUDENTS = [
     "english": 6.0
   },
   {
-    "seq": 51,
+    "seq": 9,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عبدالرحمن احمد جاسم الحمدي",
+    "name": "عبد الرحمن أحمد جاسم الحمدي",
     "science": 4.0,
     "math": 5.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 52,
+    "seq": 10,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عبدالعزيز ماجد راشد الزير",
+    "name": "عبد العزيز ماجد راشد الزير",
     "science": 5.0,
     "math": 2.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 53,
+    "seq": 11,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عبدالعزيز وليد ناصر بن سعران",
+    "name": "عبد العزيز وليد ناصر بن سعران",
     "science": 4.0,
     "math": 1.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 54,
+    "seq": 12,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عبدالمجيد بن محمد بن مسعود آل عايض القحطاني",
+    "name": "عبد الله بن بندر بن فهد المفيجل",
+    "science": 5.0,
+    "math": 2.0,
+    "lughati": 5.0,
+    "english": 2.0
+  },
+  {
+    "seq": 13,
+    "grade": "الصف الثاني المتوسط",
+    "class": "فصل 203",
+    "name": "عبد المجيد بن محمد بن مسعود آل عايض القحطاني",
     "science": 4.0,
     "math": 8.0,
     "lughati": 7.0,
     "english": 9.0
   },
   {
-    "seq": 55,
+    "seq": 14,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عز الدين احمد محمد سعد",
+    "name": "عز الدين أحمد محمد سعد",
     "science": 3.0,
     "math": 5.0,
     "lughati": 0.0,
     "english": 6.0
   },
   {
-    "seq": 56,
+    "seq": 15,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عزام خالد شلهوب بن شلهوب",
+    "name": "عزام خالد شهوب بن شهوب",
     "science": 4.0,
     "math": 2.0,
     "lughati": 5.0,
     "english": 4.0
   },
   {
-    "seq": 57,
+    "seq": 16,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "عزام فهد احمد صلوي",
+    "name": "عزام فهد أحمد صلوي",
     "science": 2.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 58,
+    "seq": 17,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "عمر وليد ياسين درويش علي",
@@ -1013,7 +1175,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 4.0
   },
   {
-    "seq": 59,
+    "seq": 18,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "فارس ابن محمد بن سالم بن نويشي الوهبي الحربي",
@@ -1023,7 +1185,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 60,
+    "seq": 19,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "محمد بن علي محسن العثيميني",
@@ -1033,17 +1195,17 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 61,
+    "seq": 20,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "وائل بن عبدالله بن عامر علي ال عبيد الغامدي",
+    "name": "وائل بن عبد الله بن عامر علي آل عبيد الغامدي",
     "science": 1.0,
     "math": 0.0,
     "lughati": 6.0,
     "english": 4.0
   },
   {
-    "seq": 62,
+    "seq": 21,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
     "name": "يزيد بن حمد بن مترك بن محمد ال مسعود القحطاني",
@@ -1053,34 +1215,14 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 63,
+    "seq": 22,
     "grade": "الصف الثاني المتوسط",
     "class": "فصل 203",
-    "name": "سعيد محمد بوازير",
-    "science": 0.0,
-    "math": 2.0,
-    "lughati": 0.0,
-    "english": 0.0
-  },
-  {
-    "seq": 64,
-    "grade": "الصف الثاني المتوسط",
-    "class": "فصل 203",
-    "name": "يوسف البلوي",
+    "name": "يوسف عايد عواد البلوي",
     "science": 8.0,
     "math": 6.0,
     "lughati": 6.0,
     "english": 7.0
-  },
-  {
-    "seq": 65,
-    "grade": "الصف الثاني المتوسط",
-    "class": "فصل 203",
-    "name": "عبدالله بندر السيف",
-    "science": 5.0,
-    "math": 2.0,
-    "lughati": 5.0,
-    "english": 2.0
   },
   {
     "seq": 1,
@@ -1096,7 +1238,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 2,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "خالد محمد مسدف معافا",
+    "name": "خالد محمد مسعف معافا",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1106,7 +1248,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 3,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "راشد سعيد راشد عبدالسلام",
+    "name": "راشد سعيد راشد عبد السلام",
     "science": 4.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1116,7 +1258,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 4,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "راكان بن عبدالله بن سالم اليافعي",
+    "name": "راكان بن عبد الله بن سالم اليافعي",
     "science": 4.0,
     "math": 7.0,
     "lughati": 6.0,
@@ -1126,7 +1268,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 5,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "زياد احمد بن علي اللحيد",
+    "name": "زياد أحمد بن علي اللحيد",
     "science": 3.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1146,7 +1288,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 7,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "سلطان احمد صالح الفنتوخ",
+    "name": "سلطان أحمد صالح الفتوح",
     "science": 6.0,
     "math": 4.0,
     "lughati": 6.0,
@@ -1156,7 +1298,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 8,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "عبدالعزيز عبدالله شراز المالكي",
+    "name": "عبد العزيز عبد الله شراز المالكي",
     "science": 5.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1166,7 +1308,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 9,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "عبدالعزيز عبدالله عايض الاسمري",
+    "name": "عبد العزيز عبد الله عايض الأسمري",
     "science": 5.0,
     "math": 6.0,
     "lughati": 7.0,
@@ -1176,7 +1318,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 10,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "عبدالله عبيد عبدالله العتيبي",
+    "name": "عبد الله عبيد عبد الله العتيبي",
     "science": 2.0,
     "math": 4.0,
     "lughati": 4.0,
@@ -1186,7 +1328,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 11,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "عبدالله فهد جلوي سالم الشرمي",
+    "name": "عبد الله فهد جلوي سالم الشرعي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1196,7 +1338,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 12,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "علي ابراهيم علي الاسمري",
+    "name": "علي إبراهيم علي الأسمري",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
@@ -1206,7 +1348,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 13,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "عماد الدين اسلام محمد دراز",
+    "name": "عماد الدين إسلام محمد دراز",
     "science": 0.0,
     "math": 7.0,
     "lughati": 0.0,
@@ -1226,7 +1368,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 15,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "فهد عبدالرحمن فهد العتيبي",
+    "name": "فهد عبد الرحمن فهد العتيبي",
     "science": 3.0,
     "math": 0.0,
     "lughati": 5.0,
@@ -1236,7 +1378,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 16,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "فيصل بن عبدالمحسن بن عايض العصيمي العتيبي",
+    "name": "فيصل بن عبد الرحمن بن عايض العصيمي العتيبي",
     "science": 5.0,
     "math": 9.0,
     "lughati": 0.0,
@@ -1246,7 +1388,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 17,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "فيصل محمد صالح الفنتوخ",
+    "name": "فيصل محمد صالح الفتوح",
     "science": 5.0,
     "math": 7.0,
     "lughati": 7.0,
@@ -1256,7 +1398,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 18,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "محمد سلطان عبدالعزيز العيد",
+    "name": "محمد سلطان عبد العزيز العيد",
     "science": 4.0,
     "math": 5.0,
     "lughati": 0.0,
@@ -1276,7 +1418,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 20,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "مشاري ابراهيم عبداللطيف المغربي",
+    "name": "مشاري إبراهيم عبد اللطيف المغربي",
     "science": 0.0,
     "math": 4.0,
     "lughati": 0.0,
@@ -1296,7 +1438,7 @@ RAW_EXCEL_STUDENTS = [
     "seq": 22,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 301",
-    "name": "مهند عبدالله فهد الزكري",
+    "name": "مهند عبد الله فهد الزكري",
     "science": 6.0,
     "math": 4.0,
     "lughati": 7.0,
@@ -1323,47 +1465,57 @@ RAW_EXCEL_STUDENTS = [
     "english": 6.0
   },
   {
-    "seq": 25,
+    "seq": 1,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "تركي عبدالعزيز عبدالله المرزوق",
+    "name": "تركي عبد العزيز عبد الله المرزوق",
     "science": 4.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 26,
+    "seq": 2,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "راشد احمد فهد ال سعيد",
+    "name": "تركي عثمان عبد العزيز العثمان",
+    "science": 4.0,
+    "math": 0.0,
+    "lughati": 0.0,
+    "english": 3.0
+  },
+  {
+    "seq": 3,
+    "grade": "الصف الثالث المتوسط",
+    "class": "فصل 302",
+    "name": "راشد أحمد فهد آل سعيد",
     "science": 0.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 2.0
   },
   {
-    "seq": 27,
+    "seq": 4,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "راكان ابراهيم محمد دبوان",
+    "name": "راكان إبراهيم محمد ديوان",
     "science": 4.0,
     "math": 3.0,
     "lughati": 4.0,
     "english": 2.0
   },
   {
-    "seq": 28,
+    "seq": 5,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "ريان ناصر عبدالرحمن المرشود",
+    "name": "ريان ناصر عبد الرحمن المرشود",
     "science": 4.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 29,
+    "seq": 6,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
     "name": "صالح بن ممدوح بن صالح بن خالد الجويعي",
@@ -1373,7 +1525,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 30,
+    "seq": 7,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
     "name": "عبد الرحمن محمد صلاح بدر الدين",
@@ -1383,57 +1535,67 @@ RAW_EXCEL_STUDENTS = [
     "english": 6.0
   },
   {
-    "seq": 31,
+    "seq": 8,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "عبدالعزيز تركي عبدالعزيز اللهيم",
+    "name": "عبد العزيز تركي عبد العزيز اللهيم",
     "science": 2.0,
     "math": 4.0,
     "lughati": 6.0,
     "english": 5.0
   },
   {
-    "seq": 32,
+    "seq": 9,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "عبدالعزيز عبدالمحسن فهد بن بديع",
+    "name": "عبد العزيز عبد المحسن فهد بن بديع",
     "science": 0.0,
     "math": 6.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 33,
+    "seq": 10,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "عبدالله متعب بن عبدالرحمن الجبرين",
+    "name": "عبد الله متعب بن عبد الرحمن الجبرين",
     "science": 4.0,
     "math": 7.0,
     "lughati": 7.0,
     "english": 4.0
   },
   {
-    "seq": 34,
+    "seq": 11,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "عبدالمحسن طارق بن عبدالرحمن العروان",
+    "name": "عبد المحسن طارق بن عبد الرحمن العروان",
     "science": 4.0,
     "math": 3.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 35,
+    "seq": 12,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "فارس وليد بن عبدالله الحوطي",
+    "name": "فارس وليد بن عبد الله الحوطي",
     "science": 4.0,
     "math": 5.0,
     "lughati": 6.0,
     "english": 5.0
   },
   {
-    "seq": 36,
+    "seq": 13,
+    "grade": "الصف الثالث المتوسط",
+    "class": "فصل 302",
+    "name": "محمد خالد محمد بن مشرف",
+    "science": 4.0,
+    "math": 5.0,
+    "lughati": 5.0,
+    "english": 3.0
+  },
+  {
+    "seq": 14,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
     "name": "محمد سعد بن محمد العيشان",
@@ -1443,27 +1605,37 @@ RAW_EXCEL_STUDENTS = [
     "english": 2.0
   },
   {
-    "seq": 37,
+    "seq": 15,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "محمد عبدالعزيز محمد الخالدي",
+    "name": "محمد عبد العزيز محمد الخالدي",
     "science": 0.0,
     "math": 0.0,
     "lughati": 4.0,
     "english": 1.0
   },
   {
-    "seq": 38,
+    "seq": 16,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "ناصر محمد عبدالله الزريعي",
+    "name": "مهند ماجد علي كعبي",
+    "science": 5.0,
+    "math": 5.0,
+    "lughati": 4.0,
+    "english": 2.0
+  },
+  {
+    "seq": 17,
+    "grade": "الصف الثالث المتوسط",
+    "class": "فصل 302",
+    "name": "ناصر محمد عبد الله المزريعي",
     "science": 5.0,
     "math": 3.0,
     "lughati": 4.0,
     "english": 2.0
   },
   {
-    "seq": 39,
+    "seq": 18,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
     "name": "نواف سعد بن علي القاسم",
@@ -1473,127 +1645,77 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 40,
+    "seq": 19,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 302",
-    "name": "ياسر تركي اسماعيل مسملي",
+    "name": "ياسر تركي إسماعيل مسلمي",
     "science": 8.0,
     "math": 9.0,
     "lughati": 6.0,
     "english": 6.0
   },
   {
-    "seq": 41,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 302",
-    "name": "عبد الرحمن الجمعة",
-    "science": 3.0,
-    "math": 1.0,
-    "lughati": 0.0,
-    "english": 3.0
-  },
-  {
-    "seq": 42,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 302",
-    "name": "تركي العثمان",
-    "science": 4.0,
-    "math": 4.0,
-    "lughati": 0.0,
-    "english": 6.0
-  },
-  {
-    "seq": 43,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 302",
-    "name": "سلطان الخالدي",
-    "science": 5.0,
-    "math": 4.0,
-    "lughati": 3.0,
-    "english": 7.0
-  },
-  {
-    "seq": 44,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 302",
-    "name": "مهند كعبي",
-    "science": 5.0,
-    "math": 5.0,
-    "lughati": 4.0,
-    "english": 2.0
-  },
-  {
-    "seq": 45,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 302",
-    "name": "محمد خالد المشرف",
-    "science": 4.0,
-    "math": 5.0,
-    "lughati": 5.0,
-    "english": 3.0
-  },
-  {
-    "seq": 46,
+    "seq": 1,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "ثامر وليد بن عبدالعزيز الطليحي",
+    "name": "ثامر وليد بن عبد العزيز الطليحي",
     "science": 2.0,
     "math": 3.0,
     "lughati": 0.0,
     "english": 2.0
   },
   {
-    "seq": 47,
+    "seq": 2,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "خالد بن عبدالرؤف بن عبدالرحمن بن عبدالله الشنيبر",
+    "name": "خالد بن عبد الرؤوف بن عبد الرحمن بن عبد الله الشنير",
     "science": 4.0,
     "math": 5.0,
     "lughati": 0.0,
     "english": 0.0
   },
   {
-    "seq": 48,
+    "seq": 3,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "خالد عبدالله خالد الخالدي",
+    "name": "خالد عبد الله خالد الخالدي",
     "science": 4.0,
     "math": 7.0,
     "lughati": 5.0,
     "english": 3.0
   },
   {
-    "seq": 49,
+    "seq": 4,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "خالد محمد بن عبدالله ال درعان",
+    "name": "خالد محمد بن عبد الله ال درعان",
     "science": 5.0,
     "math": 3.0,
     "lughati": 5.0,
     "english": 4.0
   },
   {
-    "seq": 50,
+    "seq": 5,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "راشد صالح بن عبدالعزيز الحلوان",
+    "name": "راشد صالح بن عبد العزيز الحلوان",
     "science": 4.0,
     "math": 4.0,
     "lughati": 4.0,
     "english": 3.0
   },
   {
-    "seq": 51,
+    "seq": 6,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "رواد محمد ابراهيم الخليل",
+    "name": "رواد محمد إبراهيم الخليل",
     "science": 3.0,
     "math": 5.0,
     "lughati": 6.0,
     "english": 5.0
   },
   {
-    "seq": 52,
+    "seq": 7,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
     "name": "صالح بن محمد بن صالح الميموني المطيري",
@@ -1603,7 +1725,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 53,
+    "seq": 8,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
     "name": "ضاري صالح مهنا العازمي",
@@ -1613,37 +1735,47 @@ RAW_EXCEL_STUDENTS = [
     "english": 3.0
   },
   {
-    "seq": 54,
+    "seq": 9,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "عبدالرحمن بدر عبدالرحمن الطريقي",
+    "name": "عبد الرحمن بدر عبد الرحمن الطريقي",
     "science": 4.0,
     "math": 3.0,
     "lughati": 0.0,
     "english": 3.0
   },
   {
-    "seq": 55,
+    "seq": 10,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "عبدالرحمن خالد محمد سعيد",
+    "name": "عبد الرحمن خالد محمد سعيد",
     "science": 4.0,
     "math": 7.0,
     "lughati": 7.0,
     "english": 5.0
   },
   {
-    "seq": 56,
+    "seq": 11,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "عبدالله عبدالرحمن عبدالله النجراني",
+    "name": "عبد الله تركي عبد الله الأحمد",
+    "science": 4.0,
+    "math": 6.0,
+    "lughati": 0.0,
+    "english": 7.0
+  },
+  {
+    "seq": 12,
+    "grade": "الصف الثالث المتوسط",
+    "class": "فصل 303",
+    "name": "عبد الله عبد الرحمن عبد الله النجراني",
     "science": 3.0,
     "math": 7.0,
     "lughati": 7.0,
     "english": 6.0
   },
   {
-    "seq": 57,
+    "seq": 13,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
     "name": "علي بن خالد بن علي العجيري",
@@ -1653,57 +1785,57 @@ RAW_EXCEL_STUDENTS = [
     "english": 7.0
   },
   {
-    "seq": 58,
+    "seq": 14,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "علي عبدالله علي ال حمود",
+    "name": "علي عبد الله علي آل حمود",
     "science": 6.0,
     "math": 7.0,
     "lughati": 7.0,
     "english": 10.0
   },
   {
-    "seq": 59,
+    "seq": 15,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "فهد بن خالد بن فهد بن عبدالعزيز الزيد",
+    "name": "فهد بن خالد بن فهد بن عبد العزيز الزيد",
     "science": 3.0,
     "math": 2.0,
     "lughati": 6.0,
     "english": 2.0
   },
   {
-    "seq": 60,
+    "seq": 16,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "فيصل عبدالرحمن عزيز القحطاني",
+    "name": "فيصل عبد الرحمن عزيز القحطاني",
     "science": 3.0,
     "math": 4.0,
     "lughati": 0.0,
     "english": 2.0
   },
   {
-    "seq": 61,
+    "seq": 17,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "ماجد فهد عبدالعزيز الكثيري",
+    "name": "ماجد فهد عبد العزيز الكثيري",
     "science": 1.0,
     "math": 0.0,
     "lughati": 0.0,
     "english": 7.0
   },
   {
-    "seq": 62,
+    "seq": 18,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "مازن خالد عبدربه الزهراني",
+    "name": "مازن خالد عبد ربه الزهراني",
     "science": 4.0,
     "math": 4.0,
     "lughati": 8.0,
     "english": 5.0
   },
   {
-    "seq": 63,
+    "seq": 19,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
     "name": "متعب مطر جمعان الدوسري",
@@ -1713,7 +1845,7 @@ RAW_EXCEL_STUDENTS = [
     "english": 0.0
   },
   {
-    "seq": 64,
+    "seq": 20,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
     "name": "نواف فهد بن ناصر القحطاني",
@@ -1723,27 +1855,16 @@ RAW_EXCEL_STUDENTS = [
     "english": 9.0
   },
   {
-    "seq": 65,
+    "seq": 21,
     "grade": "الصف الثالث المتوسط",
     "class": "فصل 303",
-    "name": "يوسف عبدالله عوض العتيبي",
+    "name": "يوسف عبد الله عوض العتيبي",
     "science": 3.0,
     "math": 6.0,
     "lughati": 0.0,
     "english": 4.0
-  },
-  {
-    "seq": 66,
-    "grade": "الصف الثالث المتوسط",
-    "class": "فصل 303",
-    "name": "عبدالله تركي الاحمد",
-    "science": 4.0,
-    "math": 6.0,
-    "lughati": 0.0,
-    "english": 7.0
   }
 ]
-
 
 TESTS_LIST = [
     "الاختبار التشخيصي الأول",
@@ -1755,12 +1876,12 @@ TESTS_LIST = [
 # ---------------------------------------------------------
 # 3. إدارة قاعدة البيانات / Database Manager
 # ---------------------------------------------------------
-DB_FILE = "student_grades_v10.db"
+DB_FILE = "student_grades_v12.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute('''
+    c.execute("""
         CREATE TABLE IF NOT EXISTS grades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             test_name TEXT,
@@ -1773,7 +1894,7 @@ def init_db():
             lughati REAL DEFAULT 0.0,
             english REAL DEFAULT 0.0
         )
-    ''')
+    """)
     
     c.execute("SELECT COUNT(*) FROM grades")
     if c.fetchone()[0] == 0:
@@ -1801,22 +1922,22 @@ def init_db():
                     0.0, 0.0, 0.0, 0.0
                 ))
                 
-        c.executemany('''
+        c.executemany("""
             INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', initial_rows)
+        """, initial_rows)
         conn.commit()
     conn.close()
 
 def load_class_students(test_name, grade_name, class_name):
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query('''
+    df = pd.read_sql_query("""
         SELECT id, seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
                science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
         FROM grades
         WHERE test_name = ? AND grade = ? AND class_name = ?
         ORDER BY seq_num ASC
-    ''', conn, params=(test_name, grade_name, class_name))
+    """, conn, params=(test_name, grade_name, class_name))
     conn.close()
     return df
 
@@ -1824,22 +1945,22 @@ def update_student_scores(df_updated):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     for _, row in df_updated.iterrows():
-        c.execute('''
+        c.execute("""
             UPDATE grades
             SET science = ?, math = ?, lughati = ?, english = ?
             WHERE id = ?
-        ''', (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
+        """, (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
     conn.commit()
     conn.close()
 
 def load_all_db_records():
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query('''
+    df = pd.read_sql_query("""
         SELECT id AS 'المعرف', test_name AS 'الاختبار', grade AS 'الصف الدراسي',
                class_name AS 'الفصل', seq_num AS 'المسلسل', student_name AS 'اسم الطالب',
                science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
         FROM grades
-    ''', conn)
+    """, conn)
     conn.close()
     return df
 
@@ -1847,13 +1968,13 @@ def save_new_student(test_name, grade_name, class_name, student_name, s, m, l, e
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("SELECT MAX(seq_num) FROM grades WHERE test_name = ? AND grade = ? AND class_name = ?", (test_name, grade_name, class_name))
-    row = c.fetchone()
-    next_seq = (row[0] or 0) + 1 if row else 1
+    max_seq_res = c.fetchone()
+    next_seq = ((max_seq_res[0] or 0) if max_seq_res else 0) + 1
     
-    c.execute('''
+    c.execute("""
         INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (test_name, grade_name, class_name, next_seq, student_name, s, m, l, e))
+    """, (test_name, grade_name, class_name, next_seq, student_name, s, m, l, e))
     conn.commit()
     conn.close()
 
@@ -1864,58 +1985,27 @@ def export_to_excel_bytes(df_export):
     output.seek(0)
     return output
 
-def save_bulk_excel_to_db(df_excel, default_test):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    count = 0
-    for _, row in df_excel.iterrows():
-        t_name = str(row.get('الاختبار', default_test)).strip()
-        g_name = str(row.get('الصف', 'الصف الأول المتوسط')).strip()
-        c_name = str(row.get('الفصل', 'فصل 101')).strip()
-        s_name = str(row.get('اسم الطالب', '')).strip()
-        
-        try: s_val = float(row.get('علوم', 0.0))
-        except: s_val = 0.0
-        try: m_val = float(row.get('رياضيات', 0.0))
-        except: m_val = 0.0
-        try: l_val = float(row.get('لغتي', 0.0))
-        except: l_val = 0.0
-        try: e_val = float(row.get('انجليزي', 0.0))
-        except: e_val = 0.0
-        
-        if s_name:
-            c.execute("SELECT MAX(seq_num) FROM grades WHERE test_name = ? AND grade = ? AND class_name = ?", (t_name, g_name, c_name))
-            r_seq = c.fetchone()
-            n_seq = (r_seq[0] or 0) + 1 if r_seq else 1
-            
-            c.execute('''
-                INSERT INTO grades (test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (t_name, g_name, c_name, n_seq, s_name, s_val, m_val, l_val, e_val))
-            count += 1
-    conn.commit()
-    conn.close()
-    return count
-
 init_db()
 
 # ---------------------------------------------------------
 # 4. الهيدر وشريط الأدوات العلوي Main Header
 # ---------------------------------------------------------
-st.markdown("""<div class="main-header">
+header_html = """<div class="main-header">
     <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
         <i class="fa-solid fa-crown designer-icon"></i>
         <span class="designer-text">تصميم وتطوير: محمد سامي السعيد</span>
     </div>
-</div>""", unsafe_allow_html=True)
+</div>"""
+st.markdown(clean_html(header_html), unsafe_allow_html=True)
 
-st.markdown("""<div class="top-toolbar">
+toolbar_html = """<div class="top-toolbar">
     <div class="save-indicator">
         <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ الفوري في قاعدة البيانات (SQLite / Google Sheets)
     </div>
-</div>""", unsafe_allow_html=True)
+</div>"""
+st.markdown(clean_html(toolbar_html), unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 5. القوائم المنسدلة المتسلسلة (اختبار -> صف -> فصل)
@@ -1958,7 +2048,7 @@ with tab_entry:
     if df_students.empty:
         st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
     else:
-        st.markdown("""<div class="color-legend">
+        legend_html = """<div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
             <div class="legend-item">
                 <div class="color-box" style="background:#bbf7d0;"></div>
@@ -1972,7 +2062,8 @@ with tab_entry:
                 <div class="color-box" style="background:#e5e7eb;"></div>
                 <span>بدون درجة / 0 (رصاصي فاتح - خالية)</span>
             </div>
-        </div>""", unsafe_allow_html=True)
+        </div>"""
+        st.markdown(clean_html(legend_html), unsafe_allow_html=True)
 
         c_btn1, c_btn2 = st.columns(2)
         
@@ -2039,10 +2130,11 @@ with tab_entry:
                     def fmt_score_cell(v):
                         if pd.isna(v) or v == 0 or v == 0.0:
                             return 'score-zero', ''
-                        txt = str(int(v)) if v == int(v) else f'{v:.1f}'
-                        if v < 5.0:
+                        elif v < 5.0:
+                            txt = f'{int(v)}' if v == int(v) else f'{v:g}'
                             return 'score-red', txt
                         else:
+                            txt = f'{int(v)}' if v == int(v) else f'{v:g}'
                             return 'score-green', txt
 
                     cs, ts = fmt_score_cell(s_val)
@@ -2050,19 +2142,8 @@ with tab_entry:
                     cl, tl = fmt_score_cell(l_val)
                     ce, te = fmt_score_cell(e_val)
                     
-                    if tot_val == 0 or tot_val == 0.0 or pd.isna(tot_val):
-                        ttot = ''
-                    elif tot_val == int(tot_val):
-                        ttot = str(int(tot_val))
-                    else:
-                        ttot = f'{tot_val:.1f}'
-
-                    if avg_val == 0 or avg_val == 0.0 or pd.isna(avg_val):
-                        tavg = ''
-                    elif avg_val == int(avg_val):
-                        tavg = str(int(avg_val))
-                    else:
-                        tavg = f'{avg_val:.2f}'.rstrip('0').rstrip('.')
+                    ttot = f'{int(tot_val)}' if tot_val == int(tot_val) else f'{tot_val:g}' if tot_val > 0 else ''
+                    tavg = f'{int(avg_val)}' if avg_val == int(avg_val) else f'{avg_val:.2f}' if avg_val > 0 else ''
                     
                     rows_html += f"""<tr>
                         <td class="td-seq">{seq}</td>
@@ -2075,7 +2156,7 @@ with tab_entry:
                         <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{tavg}</td>
                     </tr>"""
             
-            table_full = f"""<table class="custom-grade-table">
+            table_html = f"""<table class="custom-grade-table">
                 <thead>
                     <tr>
                         <th class="th-seq">م</th>
@@ -2092,10 +2173,10 @@ with tab_entry:
                     {rows_html}
                 </tbody>
             </table>"""
-            return table_full
+            return table_html
 
-        final_table_html = build_html_grade_table(df_students, is_blank=show_blank)
-        st.markdown(final_table_html, unsafe_allow_html=True)
+        table_html = build_html_grade_table(df_students, is_blank=show_blank)
+        st.markdown(clean_html(table_html), unsafe_allow_html=True)
 
 # =========================================================
 # التبويب الثاني: الرسم البياني والمقارنة بين عدة فصول
@@ -2112,41 +2193,40 @@ with tab_charts:
             avail_classes,
             default=avail_classes
         )
-    
+        
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🖨️ طباعة الرسم البياني (PDF / Print)", type="primary"):
+        if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
             st.components.v1.html("""<script>
                 setTimeout(function() { window.parent.print(); }, 300);
             </script>""", height=0)
+
+    chart_shape = st.selectbox(
+        "شكل الرسم البياني للمقارنة:",
+        ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"]
+    )
 
     if not selected_classes_compare:
         st.warning("يرجى اختيار فصل واحد على الأقل للمقارنة.")
     else:
         conn = sqlite3.connect(DB_FILE)
-        placeholders = ','.join(['?']*len(selected_classes_compare))
-        query = f'''
+        placeholders = ', '.join(['?'] * len(selected_classes_compare))
+        query = f"""
             SELECT class_name, AVG(science) AS 'علوم', AVG(math) AS 'رياضيات', AVG(lughati) AS 'لغتي', AVG(english) AS 'انجليزي'
             FROM grades
             WHERE test_name = ? AND grade = ? AND class_name IN ({placeholders})
             GROUP BY class_name
-        '''
-        
-        df_comp = pd.read_sql_query(query, conn, params=[selected_test, selected_grade] + selected_classes_compare)
+        """
+        params = [selected_test, selected_grade] + selected_classes_compare
+        df_comp = pd.read_sql_query(query, conn, params=params)
         conn.close()
 
         if df_comp.empty:
-            st.info("لا توجد بيانات متاحة للفصول المختارة.")
+            st.info("لا توجد بيانات للفصول المختارة.")
         else:
             df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']] = df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']].round(2)
-            
             df_melted = df_comp.melt(id_vars=['class_name'], var_name='المادة', value_name='متوسط الدرجة')
-            
-            chart_shape = st.selectbox(
-                "شكل الرسم البياني للمقارنة:",
-                ["أعمدة بيانية متجاورة (Grouped Bar)", "منحنى بياني متعدد (Multi-Line)", "مخطط رادار تفاعلي (Radar Chart)"]
-            )
-            
+
             if "أعمدة" in chart_shape:
                 fig_comp = px.bar(
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', barmode='group',
@@ -2184,33 +2264,14 @@ with tab_charts:
 with tab_excel:
     st.subheader("🟢 استيراد وتصدير كافة السجلات عبر Excel")
     
-    col_exp_box, col_imp_box = st.columns(2)
+    col_exp_box, col_info_box = st.columns(2)
     
-    with col_imp_box:
-        st.markdown("""<div class="excel-box">
-            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> رفع واستيراد ملف Excel</h4>
-            <p style="font-size:13px; color:#4b5563;">يمكنك رفع ملف إكسل يحتوي على أسماء الطلاب والدرجات لرفعهم دفعة واحدة.</p>
-        </div>""", unsafe_allow_html=True)
-        
-        uploaded_excel = st.file_uploader("اختر ملف Excel (.xlsx / .xls):", type=["xlsx", "xls"])
-        if uploaded_excel is not None:
-            try:
-                df_up = pd.read_excel(uploaded_excel)
-                st.write("🔍 **معاينة البيانات في الملف:**")
-                st.dataframe(df_up.head(10), use_container_width=True)
-                
-                if st.button("🚀 استيراد البيانات إلى البرنامج", type="primary"):
-                    cnt = save_bulk_excel_to_db(df_up, selected_test)
-                    st.success(f"تم استيراد {cnt} طالب بنجاح إلى قاعدة البيانات!")
-                    st.rerun()
-            except Exception as ex:
-                st.error(f"خطأ أثناء رفع الملف: {ex}")
-
     with col_exp_box:
-        st.markdown("""<div class="excel-box" style="background-color:#eff6ff; border-color:#2563eb;">
-            <h4 style="color:#2563eb; margin-top:0;"><i class="fa-solid fa-download"></i> تصدير جميع درجات المواد</h4>
+        box_html = """<div class="excel-box">
+            <h4 style="color:#16a34a; margin-top:0;"><i class="fa-solid fa-file-excel"></i> تصدير جميع درجات المواد</h4>
             <p style="font-size:13px; color:#4b5563;">تحميل قاعدة بيانات كافة الصفوف والفصول والمواد الأربع في ملف Excel واحد منسق.</p>
-        </div>""", unsafe_allow_html=True)
+        </div>"""
+        st.markdown(clean_html(box_html), unsafe_allow_html=True)
         
         df_all_export = load_all_db_records()
         excel_data = export_to_excel_bytes(df_all_export)
@@ -2229,7 +2290,7 @@ with tab_excel:
 with tab_add:
     st.subheader("➕ إضافة طالب جديد ورصد درجات المواد له")
     
-    with st.form("add_student_v10_form", clear_on_submit=True):
+    with st.form("add_student_v12_form", clear_on_submit=True):
         f1, f2 = st.columns(2)
         with f1:
             add_t = st.selectbox("الاختبار:", TESTS_LIST, index=TESTS_LIST.index(selected_test))
@@ -2252,7 +2313,3 @@ with tab_add:
                 save_new_student(add_t, add_g, add_c, add_s_name.strip(), add_s, add_m, add_l, add_e)
                 st.success(f"تمت إضافة الطالب ({add_s_name}) بنجاح إلى {add_c}!")
                 st.rerun()
-
-             
-    
- 
