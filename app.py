@@ -2255,19 +2255,19 @@ with tab_charts:
             default=avail_classes
         )
         
-    with col_ch_print:
-    st.markdown("<br>", unsafe_allow_html=True)
+        with col_ch_print:
+                st.markdown("<br>", unsafe_allow_html=True)
     
     # 💡 إضافة نمط CSS لتوجيه الصفحة للطباعة بشكل عرضي (Landscape)
-    st.markdown("""
-        <style>
-        @media print {
+                st.markdown("""
+                <style>
+                @media print {
             @page {
                 size: landscape;
-            }
-        }
-        </style>
-    """, unsafe_allow_html=True)
+                    }
+                }
+                </style>
+            """, unsafe_allow_html=True)
 
     if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
         st.components.v1.html("""<script>
