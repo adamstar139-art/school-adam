@@ -2256,11 +2256,23 @@ with tab_charts:
         )
         
     with col_ch_print:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>
-                setTimeout(function() { window.parent.print(); }, 300);
-            </script>""", height=0)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 💡 إضافة نمط CSS لتوجيه الصفحة للطباعة بشكل عرضي (Landscape)
+    st.markdown("""
+        <style>
+        @media print {
+            @page {
+                size: landscape;
+            }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
+        st.components.v1.html("""<script>
+            setTimeout(function() { window.parent.print(); }, 300);
+        </script>""", height=0)
 
     chart_shape = st.selectbox(
         "شكل الرسم البياني للمقارنة:",
