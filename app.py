@@ -2271,7 +2271,7 @@ with tab_charts:
 
     if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
         st.components.v1.html("""<script>
-            setTimeout(function() { window.parent.print(); }, 300);
+            setTimeout(function() { window.parent.print(); }, 360);
         </script>""", height=0)
 
     chart_shape = st.selectbox(
