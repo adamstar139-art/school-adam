@@ -2233,7 +2233,8 @@ with tab_charts:
                     text='متوسط الدرجة',
                     title=f"مقارنة متوسط درجات المواد بين فصول {selected_grade}",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
-                    color_discrete_sequence=['#1e40af', '#2563eb', '#3b82f6', '#0284c7']
+                    color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
+
                 )
                 fig_comp.update_traces(textposition='outside')
             elif "منحنى" in chart_shape:
