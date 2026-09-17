@@ -2106,13 +2106,14 @@ init_db()
 # 4. الهيدر وشريط الأدوات العلوي Main Header
 # ---------------------------------------------------------
 print_header_html = f"""<div class="print-header-only">
-        <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
-        <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
-        <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
-    </div>"""
-    st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
-    table_html = build_html_grade_table(df_students, is_blank=show_blank)
-    st.markdown(clean_html(table_html), unsafe_allow_html=True)
+    <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
+    <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
+    <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
+</div>"""
+
+st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
+table_html = build_html_grade_table(df_students, is_blank=show_blank)
+st.markdown(clean_html(table_html), unsafe_allow_html=True)
         
         # استدعاء الدالة هنا داخل الـ else
         table_html = build_html_grade_table(df_students, is_blank=show_blank)
