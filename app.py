@@ -10,7 +10,74 @@ def clean_html(html_str):
         return ""
     lines = [line.strip() for line in html_str.strip().splitlines()]
     return "\n".join([line for line in lines if line])
+def build_html_grade_table(df_data, is_blank=False):
+    rows_html = ""
+    for _, row in df_data.iterrows():
+        seq = row['المسلسل']
+        name = row['اسم الطالب']
+        
+        if is_blank:
+            rows_html += f"""<tr>
+                <td class="td-seq">{seq}</td>
+                <td class="td-name">{name}</td>
+                <td class="score-blank"></td><td class="score-blank"></td>
+                <td class="score-blank"></td><td class="score-blank"></td>
+                <td class="score-blank"></td><td class="score-blank"></td>
+            </tr>"""
+        else:
+            s_val = row['علوم']
+            m_val = row['رياضيات']
+            l_val = row['لغتي']
+            e_val = row['انجليزي']
+            tot_val = s_val + m_val + l_val + e_val
+            avg_val = tot_val / 4.0 if tot_val > 0 else 0.0
+            
+            def fmt_score_cell(v):
+                if pd.isna(v) or v == 0 or v == 0.0:
+                    return 'score-zero', ''
+                elif v < 5.0:
+                    txt = f'{int(v)}' if v == int(v) else f'{v:g}'
+                    return 'score-red', txt
+                else:
+                    txt = f'{int(v)}' if v == int(v) else f'{v:g}'
+                    return 'score-green', txt
 
+            cs, ts = fmt_score_cell(s_val)
+            cm, tm = fmt_score_cell(m_val)
+            cl, tl = fmt_score_cell(l_val)
+            ce, te = fmt_score_cell(e_val)
+            
+            ttot = f'{int(tot_val)}' if tot_val == int(tot_val) else f'{tot_val:g}' if tot_val > 0 else ''
+            tavg = f'{int(avg_val)}' if avg_val == int(avg_val) else f'{avg_val:.2f}' if avg_val > 0 else ''
+            
+            rows_html += f"""<tr>
+                <td class="td-seq">{seq}</td>
+                <td class="td-name">{name}</td>
+                <td class="{cs}">{ts}</td>
+                <td class="{cm}">{tm}</td>
+                <td class="{cl}">{tl}</td>
+                <td class="{ce}">{te}</td>
+                <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{ttot}</td>
+                <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{tavg}</td>
+            </tr>"""
+    
+    return f"""<table class="custom-grade-table">
+        <thead>
+            <tr>
+                <th class="th-seq">م</th>
+                <th class="th-name">اسم الطالب</th>
+                <th class="th-sci">علوم (10)</th>
+                <th class="th-math">رياضيات (10)</th>
+                <th class="th-lug">لغتي (10)</th>
+                <th class="th-eng">انجليزي (10)</th>
+                <th class="th-tot">المجموع (40)</th>
+                <th class="th-avg">المتوسط (10)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows_html}
+        </tbody>
+    </table>"""
 # ---------------------------------------------------------
 # 1. تهيئة الصفحة والنمط Visual Theme & Page Config
 # ---------------------------------------------------------
