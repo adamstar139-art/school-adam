@@ -2184,7 +2184,7 @@ with tab_entry:
 with tab_charts:
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
     
-    col_ch_print, col_ch_multi = st.columns([1, 3])
+    col_ch_print, col_ch_multi = st.columns([1, 2])
     
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
@@ -2196,9 +2196,46 @@ with tab_charts:
         
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 💡 نمط CSS مخصص للطباعة على ورقة A4 عرضية وملء الصفحة بالرسم البياني فقط
+        st.markdown("""
+            <style>
+            @media print {
+                /* ضبط الورقة لتكون A4 بشكل عرضي بدون هوامش خارجية */
+                @page {
+                    size: A4 landscape;
+                    margin: 0;
+                }
+                
+                /* إخفاء الهيدر الرئيسي، الشريط الجانبي، التبويبات، الأزرار، والقوائم */
+                header, footer, [data-testid="stSidebar"], .main-header, .top-toolbar, 
+                .stTabs, button, [data-testid="stSelectbox"], [data-testid="stMultiSelect"],
+                .print-header-only, .custom-grade-table, .color-legend, hr, h3, label {
+                    display: none !important;
+                }
+
+                /* إلغاء الهوامش الداخلية للمنصة للطباعة */
+                .main .block-container {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                }
+
+                /* جعل الرسم البياني يمتد لملء ورقة A4 بالكامل */
+                .stPlotlyChart, .js-plotly-plot, .plot-container {
+                    width: 100vw !important;
+                    height: 95vh !important;
+                    margin: 0 auto !important;
+                }
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
             st.components.v1.html("""<script>
-                setTimeout(function() { window.parent.print(); }, 300);
+                setTimeout(function() { window.parent.print(); }, 460);
             </script>""", height=0)
 
     chart_shape = st.selectbox(
@@ -2231,19 +2268,17 @@ with tab_charts:
                 fig_comp = px.bar(
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', barmode='group',
                     text='متوسط الدرجة',
-                    title=f"مقارنة متوسط درجات المواد بين فصول {selected_grade}",
+                    title=f"مقارنة متوسط درجات المواد - {selected_grade} ({selected_test})",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
-
                 )
                 fig_comp.update_traces(textposition='outside')
             elif "منحنى" in chart_shape:
                 fig_comp = px.line(
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', markers=True,
-                    title=f"منحنى مقارنة أداء المواد بين فصول {selected_grade}",
+                    title=f"منحنى مقارنة أداء المواد - {selected_grade} ({selected_test})",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
-
                 )
             else:
                 fig_comp = go.Figure()
@@ -2255,9 +2290,13 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
-                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[0, 10])))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[3])))
 
-            fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
+            fig_comp.update_layout(
+                font_family="Cairo",
+                plot_bgcolor="white",
+                margin=dict(l=30, r=30, t=60, b=40)
+            )
             st.plotly_chart(fig_comp, use_container_width=True)
 
 # =========================================================
