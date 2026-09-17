@@ -2073,7 +2073,7 @@ with tab_entry:
         with c_btn2:
             if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
                 st.components.v1.html("""<script>
-                    setTimeout(function() { window.parent.print(); }, 300);
+                    setTimeout(function() { window.parent.print(); }, 200);
                 </script>""", height=0)
 
         st.write("✏️ **جدول الرصد المنظم والتعديل التفاعلي:**")
