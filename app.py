@@ -2115,9 +2115,11 @@ st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
 table_html = build_html_grade_table(df_students, is_blank=show_blank)
 st.markdown(clean_html(table_html), unsafe_allow_html=True)
         
-        # استدعاء الدالة هنا داخل الـ else
-        table_html = build_html_grade_table(df_students, is_blank=show_blank)
-        st.markdown(clean_html(table_html), unsafe_allow_html=True)
+      else:
+    # استدعاء الدالة هنا داخل الـ else
+    table_html = build_html_grade_table(df_students, is_blank=show_blank)
+    st.markdown(clean_html(table_html), unsafe_allow_html=True)
+
 
 # ---------------------------------------------------------
 # 5. القوائم المنسدلة المتسلسلة (اختبار -> صف -> فصل)
