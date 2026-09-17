@@ -200,7 +200,7 @@ RAW_EXCEL_STUDENTS = [
     "class": "فصل 101",
     "name": "بلال عبد الرزاق عيسى العيسى",
     "science": 5.0,
-    "math": 0.0,
+    "math": 9.0,
     "lughati": 5.0,
     "english": 4.0
   },
@@ -220,7 +220,7 @@ RAW_EXCEL_STUDENTS = [
     "class": "فصل 101",
     "name": "حسام بن محمد بن علي ال رايان البارقي",
     "science": 3.0,
-    "math": 0.0,
+    "math": 4.0,
     "lughati": 6.0,
     "english": 6.0
   },
@@ -230,7 +230,7 @@ RAW_EXCEL_STUDENTS = [
     "class": "فصل 101",
     "name": "ريان عبد الله جابر الأسمري",
     "science": 4.0,
-    "math": 0.0,
+    "math": 7.0,
     "lughati": 6.0,
     "english": 3.0
   },
@@ -2241,7 +2241,8 @@ with tab_charts:
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', markers=True,
                     title=f"منحنى مقارنة أداء المواد بين فصول {selected_grade}",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
-                    color_discrete_sequence=['#1e40af', '#2563eb', '#3b82f6', '#0284c7']
+                    color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
+
                 )
             else:
                 fig_comp = go.Figure()
