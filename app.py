@@ -2160,34 +2160,23 @@ with tab_entry:
         # 1. دليل التنسيق الشرطي
         legend_html = """<div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
-            <div class="legend-item">
-                <div class="color-box" style="background:#bbf7d0;"></div>
-                <span>درجة ≥ 5.0 (أخضر فاتح - إتقان)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background:#fecaca;"></div>
-                <span>درجة < 5.0 (أحمر فاتح - دون الإتقان)</span>
-            </div>
-            <div class="legend-item">
-                <div class="color-box" style="background:#e5e7eb;"></div>
-                <span>بدون درجة / 0 (رصاصي فاتح - خالية)</span>
-            </div>
+            <div class="legend-item"><div class="color-box" style="background:#bbf7d0;"></div><span>درجة ≥ 5.0 (أخضر فاتح - إتقان)</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#fecaca;"></div><span>درجة < 5.0 (أحمر فاتح - دون الإتقان)</span></div>
+            <div class="legend-item"><div class="color-box" style="background:#e5e7eb;"></div><span>بدون درجة / 0 (رصاصي فاتح - خالية)</span></div>
         </div>"""
         st.markdown(clean_html(legend_html), unsafe_allow_html=True)
 
-        # 2. خيارات خفي/عرض الطباعة
+        # 2. أزرار الطباعة والعرض
         c_btn1, c_btn2 = st.columns(2)
         with c_btn1:
             show_blank = st.checkbox("📝 عرض وطباعة كشف رصد فارغ (بدون درجات للتصحيح الورقي)", value=False)
         with c_btn2:
             if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
-                st.components.v1.html("""<script>
-                    setTimeout(function() { window.parent.print(); }, 300);
-                </script>""", height=0)
+                st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
 
         st.write("✏️ **جدول الرصد المنظم والتعديل التفاعلي:**")
 
-        # 3. جدول تعديل الدرجات التفاعلي
+        # 3. محرر الجدول التفاعلي
         edited_df = st.data_editor(
             df_students[['id', 'المسلسل', 'اسم الطالب', 'علوم', 'رياضيات', 'لغتي', 'انجليزي']],
             column_config={
@@ -2204,7 +2193,7 @@ with tab_entry:
             key=f"editor_{selected_test}_{selected_grade}_{selected_class}"
         )
 
-        # 4. أزرار حفظ التعديلات وحذف الطالب
+        # 4. أزرار الحفظ والحذف
         col_s_btn, col_del_btn = st.columns(2)
         with col_s_btn:
             if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
@@ -2227,115 +2216,9 @@ with tab_entry:
                         st.success(f"تم حذف الطالب ({student_to_del}) من {selected_test}!")
                     st.rerun()
 
-        # 5. عرض جدول الرصد المنسق بالكامل للطباعة
+        # 5. طباعة سجل الدرجات ورأس الصفحة المنسق
         st.markdown("<hr>", unsafe_allow_html=True)
-        print_header_html = f"""<div class="print-header-only">
-            <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
-            <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
-            <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
-        </div>"""
-        st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
-        table_html = build_html_grade_table(df_students, is_blank=show_blank)
-        st.markdown(clean_html(table_html), unsafe_allow_html=True)
-
-
-        col_s_btn, col_del_btn = st.columns(2)
-        with col_s_btn:
-            if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
-                update_student_scores(edited_df)
-                st.success("تم حفظ درجات جميع المواد دائمياً بنجاح!")
-                st.rerun()
-
-        with col_del_btn:
-            with st.popover("🗑️ حذف طالب من الفصل"):
-                st.write("**حذف طالب من الكشف:**")
-                student_to_del = st.selectbox("اختر الطالب المراد حذفه:", df_students['اسم الطالب'].tolist(), key=f"del_sel_{selected_test}_{selected_class}")
-                del_mode = st.radio("نطاق الحذف:", ["حذف من هذا الاختبار فقط", "حذف نهائي من جميع الاختبارات"], key=f"del_mode_{selected_test}_{selected_class}")
-                if st.button("❌ تأكيد حذف الطالب", type="primary", key=f"del_confirm_{selected_test}_{selected_class}"):
-                    if "نهائي" in del_mode:
-                        delete_student_all_tests(student_to_del, selected_grade, selected_class)
-                        st.success(f"تم حذف الطالب ({student_to_del}) نهائياً من كافة الاختبارات!")
-                    else:
-                        st_id = df_students[df_students['اسم الطالب'] == student_to_del]['id'].values[0]
-                        delete_student_by_id(st_id)
-                        st.success(f"تم حذف الطالب ({student_to_del}) من {selected_test}!")
-                    st.rerun()
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.write("📊 **عرض جدول الرصد المنسق بالكامل (اتجاه اليمين للجميع | رؤوس أعمدة ملونة | درجات بدون أصفار زائدة):**")
-
-        def build_html_grade_table(df_data, is_blank=False):
-            rows_html = ""
-            for _, row in df_data.iterrows():
-                seq = row['المسلسل']
-                name = row['اسم الطالب']
-                
-                if is_blank:
-                    rows_html += f"""<tr>
-                        <td class="td-seq">{seq}</td>
-                        <td class="td-name">{name}</td>
-                        <td class="score-blank"></td>
-                        <td class="score-blank"></td>
-                        <td class="score-blank"></td>
-                        <td class="score-blank"></td>
-                        <td class="score-blank"></td>
-                        <td class="score-blank"></td>
-                    </tr>"""
-                else:
-                    s_val = row['علوم']
-                    m_val = row['رياضيات']
-                    l_val = row['لغتي']
-                    e_val = row['انجليزي']
-                    tot_val = s_val + m_val + l_val + e_val
-                    avg_val = tot_val / 4.0 if tot_val > 0 else 0.0
-                    
-                    def fmt_score_cell(v):
-                        if pd.isna(v) or v == 0 or v == 0.0:
-                            return 'score-zero', ''
-                        elif v < 5.0:
-                            txt = f'{int(v)}' if v == int(v) else f'{v:g}'
-                            return 'score-red', txt
-                        else:
-                            txt = f'{int(v)}' if v == int(v) else f'{v:g}'
-                            return 'score-green', txt
-
-                    cs, ts = fmt_score_cell(s_val)
-                    cm, tm = fmt_score_cell(m_val)
-                    cl, tl = fmt_score_cell(l_val)
-                    ce, te = fmt_score_cell(e_val)
-                    
-                    ttot = f'{int(tot_val)}' if tot_val == int(tot_val) else f'{tot_val:g}' if tot_val > 0 else ''
-                    tavg = f'{int(avg_val)}' if avg_val == int(avg_val) else f'{avg_val:.2f}' if avg_val > 0 else ''
-                    
-                    rows_html += f"""<tr>
-                        <td class="td-seq">{seq}</td>
-                        <td class="td-name">{name}</td>
-                        <td class="{cs}">{ts}</td>
-                        <td class="{cm}">{tm}</td>
-                        <td class="{cl}">{tl}</td>
-                        <td class="{ce}">{te}</td>
-                        <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{ttot}</td>
-                        <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{tavg}</td>
-                    </tr>"""
-            
-            table_html = f"""<table class="custom-grade-table">
-                <thead>
-                    <tr>
-                        <th class="th-seq">م</th>
-                        <th class="th-name">اسم الطالب</th>
-                        <th class="th-sci">علوم (10)</th>
-                        <th class="th-math">رياضيات (10)</th>
-                        <th class="th-lug">لغتي (10)</th>
-                        <th class="th-eng">انجليزي (10)</th>
-                        <th class="th-tot">المجموع (40)</th>
-                        <th class="th-avg">المتوسط (10)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_html}
-                </tbody>
-            </table>"""
-            return table_html
+        st.write("📊 **عرض جدول الرصد المنسق بالكامل:**")
 
         print_header_html = f"""<div class="print-header-only">
             <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
@@ -2345,7 +2228,6 @@ with tab_entry:
         st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
         table_html = build_html_grade_table(df_students, is_blank=show_blank)
         st.markdown(clean_html(table_html), unsafe_allow_html=True)
-
 # =========================================================
 # التبويب الثاني: الرسم البياني والمقارنة بين عدة فصول
 # =========================================================
