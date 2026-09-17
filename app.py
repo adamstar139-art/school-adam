@@ -2184,22 +2184,6 @@ with tab_entry:
 with tab_charts:
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
     
-    # 💡 نمط CSS مخصص لإخفاء الترويسة والأدوات والطباعة بشكل عرضي
-    st.markdown("""
-        <style>
-        @media print {
-            @page {
-                size: A4 landscape;
-                margin: 1cm;
-            }
-            header, footer, [data-testid="stSidebar"], .main-header, .top-toolbar, 
-            .stTabs, button, [data-testid="stSelectbox"], [data-testid="stMultiSelect"], label {
-                display: none !important;
-            }
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
     col_ch_print, col_ch_multi = st.columns([1, 3])
     
     with col_ch_multi:
@@ -2250,6 +2234,7 @@ with tab_charts:
                     title=f"مقارنة متوسط درجات المواد بين فصول {selected_grade}",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
+
                 )
                 fig_comp.update_traces(textposition='outside')
             elif "منحنى" in chart_shape:
@@ -2258,6 +2243,7 @@ with tab_charts:
                     title=f"منحنى مقارنة أداء المواد بين فصول {selected_grade}",
                     labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
+
                 )
             else:
                 fig_comp = go.Figure()
@@ -2269,7 +2255,7 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
-                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[4])))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[0, 10])))
 
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
             st.plotly_chart(fig_comp, use_container_width=True)
