@@ -2184,8 +2184,8 @@ with tab_entry:
 with tab_charts:
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
     
-    # 1. إنشاء العمودين بشكل مستقل ومحاذٍ
-    col_ch_print, col_ch_multi = st.columns([2, 3])
+    # 1. إنشاء الأعمدة بمستوى محاذاة مستقل
+    col_ch_print, col_ch_multi = st.columns([3, 4])
     
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
@@ -2202,7 +2202,7 @@ with tab_charts:
                 setTimeout(function() { window.parent.print(); }, 460);
             </script>""", height=0)
 
-    # 2. تضمين CSS الخاص بالطباعة فقط (محصور تماماً داخل @media print)
+    # 2. نمط الطباعة العرضية محصور داخل @media print
     st.markdown("""
         <style>
         @media print {
@@ -2236,6 +2236,7 @@ with tab_charts:
         ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"]
     )
 
+    # 3. استعلام البيانات وعرض الشكل البياني داخل التبويب
     if not selected_classes_compare:
         st.warning("يرجى اختيار فصل واحد على الأقل للمقارنة.")
     else:
@@ -2283,7 +2284,7 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
-                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[4])))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[5])))
 
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=30, r=30, t=60, b=40))
             st.plotly_chart(fig_comp, use_container_width=True)
