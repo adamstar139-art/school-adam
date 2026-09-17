@@ -2105,22 +2105,16 @@ init_db()
 # ---------------------------------------------------------
 # 4. الهيدر وشريط الأدوات العلوي Main Header
 # ---------------------------------------------------------
-header_html = """<div class="main-header">
-    <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
-    <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
-    <div class="designer-banner">
-        <i class="fa-solid fa-crown designer-icon"></i>
-        <span class="designer-text">تصميم وتطوير: محمد سامي السعيد </span>
-    </div>
-</div>"""
-st.markdown(clean_html(header_html), unsafe_allow_html=True)
-
-toolbar_html = """<div class="top-toolbar">
-    <div class="save-indicator">
-        <i class="fa-solid fa-circle-check"></i> تم التزامن والحفظ الفوري في قاعدة البيانات (SQLite / Google Sheets)
-    </div>
-</div>"""
-st.markdown(clean_html(toolbar_html), unsafe_allow_html=True)
+print_header_html = f"""<div class="print-header-only">
+            <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
+            <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
+            <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
+        </div>"""
+        st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
+        
+        # استدعاء الدالة هنا داخل الـ else
+        table_html = build_html_grade_table(df_students, is_blank=show_blank)
+        st.markdown(clean_html(table_html), unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 5. القوائم المنسدلة المتسلسلة (اختبار -> صف -> فصل)
