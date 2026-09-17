@@ -1978,7 +1978,17 @@ def delete_student_all_tests(student_name, grade_name, class_name):
     c.execute("DELETE FROM grades WHERE student_name = ? AND grade = ? AND class_name = ?", (student_name, grade_name, class_name))
     conn.commit()
     conn.close()
-
+    
+def update_student_scores(df_updated):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    for _, row in df_updated.iterrows():
+        c.execute("""
+            UPDATE grades SET science = ?, math = ?, lughati = ?, english = ? WHERE id = ?
+        """, (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
+    conn.commit()
+    conn.close()
+    
 def update_student_scores(df_updated):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -2086,6 +2096,7 @@ with tab_entry:
     if df_students.empty:
         st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
     else:
+        # 1. دليل التنسيق الشرطي
         legend_html = """<div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
             <div class="legend-item">
@@ -2103,11 +2114,10 @@ with tab_entry:
         </div>"""
         st.markdown(clean_html(legend_html), unsafe_allow_html=True)
 
+        # 2. خيارات خفي/عرض الطباعة
         c_btn1, c_btn2 = st.columns(2)
-        
         with c_btn1:
             show_blank = st.checkbox("📝 عرض وطباعة كشف رصد فارغ (بدون درجات للتصحيح الورقي)", value=False)
-            
         with c_btn2:
             if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
                 st.components.v1.html("""<script>
@@ -2116,6 +2126,7 @@ with tab_entry:
 
         st.write("✏️ **جدول الرصد المنظم والتعديل التفاعلي:**")
 
+        # 3. جدول تعديل الدرجات التفاعلي
         edited_df = st.data_editor(
             df_students[['id', 'المسلسل', 'اسم الطالب', 'علوم', 'رياضيات', 'لغتي', 'انجليزي']],
             column_config={
@@ -2131,6 +2142,41 @@ with tab_entry:
             use_container_width=True,
             key=f"editor_{selected_test}_{selected_grade}_{selected_class}"
         )
+
+        # 4. أزرار حفظ التعديلات وحذف الطالب
+        col_s_btn, col_del_btn = st.columns(2)
+        with col_s_btn:
+            if st.button("💾 حفظ التعديلات في قاعدة البيانات", type="secondary"):
+                update_student_scores(edited_df)
+                st.success("تم حفظ درجات جميع المواد دائمياً بنجاح!")
+                st.rerun()
+
+        with col_del_btn:
+            with st.popover("🗑️ حذف طالب من الفصل"):
+                st.write("**حذف طالب من الكشف:**")
+                student_to_del = st.selectbox("اختر الطالب المراد حذفه:", df_students['اسم الطالب'].tolist(), key=f"del_sel_{selected_test}_{selected_class}")
+                del_mode = st.radio("نطاق الحذف:", ["حذف من هذا الاختبار فقط", "حذف نهائي من جميع الاختبارات"], key=f"del_mode_{selected_test}_{selected_class}")
+                if st.button("❌ تأكيد حذف الطالب", type="primary", key=f"del_confirm_{selected_test}_{selected_class}"):
+                    if "نهائي" in del_mode:
+                        delete_student_all_tests(student_to_del, selected_grade, selected_class)
+                        st.success(f"تم حذف الطالب ({student_to_del}) نهائياً من كافة الاختبارات!")
+                    else:
+                        st_id = df_students[df_students['اسم الطالب'] == student_to_del]['id'].values
+                        delete_student_by_id(st_id)
+                        st.success(f"تم حذف الطالب ({student_to_del}) من {selected_test}!")
+                    st.rerun()
+
+        # 5. عرض جدول الرصد المنسق بالكامل للطباعة
+        st.markdown("<hr>", unsafe_allow_html=True)
+        print_header_html = f"""<div class="print-header-only">
+            <h2 style="margin:0; color:#1e3a8a; font-size:16px;">المملكة العربية السعودية - وزارة التعليم</h2>
+            <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
+            <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
+        </div>"""
+        st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
+        table_html = build_html_grade_table(df_students, is_blank=show_blank)
+        st.markdown(clean_html(table_html), unsafe_allow_html=True)
+
 
         col_s_btn, col_del_btn = st.columns(2)
         with col_s_btn:
