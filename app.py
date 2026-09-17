@@ -2110,7 +2110,7 @@ print_header_html = f"""<div class="print-header-only">
             <h3 style="margin:2px 0; color:#1e3a8a; font-size:14px;">متوسطة الثغر النموذجية الأهلية بالرياض</h3>
             <p style="margin:2px 0; font-size:13px; font-weight:800;">سجل رصد درجات: {selected_test} | {selected_grade} - {selected_class}</p>
         </div>"""
-        st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
+    st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
         
         # استدعاء الدالة هنا داخل الـ else
         table_html = build_html_grade_table(df_students, is_blank=show_blank)
