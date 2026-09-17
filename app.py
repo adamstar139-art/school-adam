@@ -2141,6 +2141,7 @@ else:
     st.markdown(clean_html(print_header_html), unsafe_allow_html=True)
     
     # بناء واستدراج جدول الرصد المنسق
+    show_blank = False  # قيمة افتراضية للنموذج الفارغ
     table_html = build_html_grade_table(df_students, is_blank=show_blank)
     st.markdown(clean_html(table_html), unsafe_allow_html=True)
 # ---------------------------------------------------------
