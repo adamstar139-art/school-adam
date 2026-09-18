@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -27,18 +28,45 @@ SERVICE_ACCOUNT_INFO = {
 }
 
 def get_gsheet_worksheet():
-    """الاتصال بـ Google Sheets عبر مكتبة gspread"""
+    """الاتصال بـ Google Sheets مع المحاولة بالترتيب وتشخيص أسباب الخطأ"""
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    # 1. المحاولة الأولى: قراءة ملف service_account.json الخارجي
+    if os.path.exists("service_account.json"):
+        try:
+            creds = Credentials.from_service_account_file("service_account.json", scopes=scopes)
+            client = gspread.authorize(creds)
+            return client.open_by_url(SPREADSHEET_URL).sheet1
+        except Exception as e:
+            st.error(f"❌ فشل الاتصال عبر ملف service_account.json: {e}")
+
+    # 2. المحاولة الثانية: استخدام st.secrets من منصة Streamlit Cloud
+    if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+        try:
+            info = dict(st.secrets["gcp_service_account"])
+            if "private_key" in info and isinstance(info["private_key"], str):
+                info["private_key"] = info["private_key"].replace("\n", "
+")
+            creds = Credentials.from_service_account_info(info, scopes=scopes)
+            client = gspread.authorize(creds)
+            return client.open_by_url(SPREADSHEET_URL).sheet1
+        except Exception as e:
+            st.error(f"❌ فشل الاتصال عبر st.secrets: {e}")
+
+    # 3. المحاولة الثالثة: استخدام المفتاح المدمج مع تصحيح تنسيق Private Key
     try:
-        scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ]
-        creds = Credentials.from_service_account_info(SERVICE_ACCOUNT_INFO, scopes=scopes)
+        info = dict(SERVICE_ACCOUNT_INFO)
+        if "private_key" in info and isinstance(info["private_key"], str):
+            info["private_key"] = info["private_key"].replace("\n", "
+")
+        creds = Credentials.from_service_account_info(info, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_url(SPREADSHEET_URL)
-        return sheet.sheet1
+        return client.open_by_url(SPREADSHEET_URL).sheet1
     except Exception as e:
-        st.error(f"خطأ في الاتصال بـ Google Sheets: {e}")
+        st.error(f"❌ خطأ في الاتصال بـ Google Sheets: {e}")
         return None
 
 def sync_db_to_gsheets():
@@ -126,7 +154,8 @@ st.set_page_config(
 def clean_html(html_str):
     if not html_str: return ""
     lines = [line.strip() for line in html_str.strip().splitlines()]
-    return "\n".join([line for line in lines if line])
+    return "
+".join([line for line in lines if line])
 
 css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -239,7 +268,11 @@ def update_student_scores(edited_df):
         """, (row['علوم'], row['رياضيات'], row['لغتي'], row['انجليزي'], row['id']))
     conn.commit()
     conn.close()
-    sync_db_to_gsheets()
+    success, msg = sync_db_to_gsheets()
+    if success:
+        st.success(msg)
+    else:
+        st.warning(msg)
 
 def save_new_student(test_name, grade_name, class_name, student_name, s, m, l, e):
     conn = sqlite3.connect(DB_FILE)
@@ -254,7 +287,11 @@ def save_new_student(test_name, grade_name, class_name, student_name, s, m, l, e
     """, (test_name, grade_name, class_name, next_seq, student_name, s, m, l, e))
     conn.commit()
     conn.close()
-    sync_db_to_gsheets()
+    success, msg = sync_db_to_gsheets()
+    if success:
+        st.success(msg)
+    else:
+        st.warning(msg)
 
 def export_to_excel_bytes(df_export):
     output = io.BytesIO()
@@ -362,7 +399,6 @@ with tab_entry:
         
         if st.button("💾 حفظ التعديلات في SQLite + Google Sheets", type="secondary"):
             update_student_scores(edited_df)
-            st.success("تم الحفظ والمزامنة المزدوجة بنجاح!")
             st.rerun()
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -421,7 +457,7 @@ with tab_entry:
                         <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{ttot}</td>
                         <td style="background:#f1f5f9; color:#0f172a; font-weight:800;">{tavg}</td>
                     </tr>"""
-            
+        
             table_html = f"""<table class="custom-grade-table">
                 <thead>
                     <tr>
@@ -502,35 +538,30 @@ with tab_charts:
             st.plotly_chart(fig_comp, use_container_width=True)
 
 # ---------------------------------------------------------
-# التبويب الثالث: التصدير والمزامنة المزدوجة
+# التبويب الثالث: التصدير والمزامنة
 # ---------------------------------------------------------
 with tab_excel:
-    st.subheader("🟢 استيراد وتصدير والمزامنة المزدوجة (SQLite ↔ Google Sheets)")
-    
-    col_exp_box, col_sync_fwd, col_sync_rev = st.columns(3)
-    
+    st.subheader("🟢 استيراد وتصدير والمزامنة المزدوجة مع Google Sheets")
+    col_exp_box, col_sync_box, col_rev_box = st.columns(3)
     with col_exp_box:
-        st.write("📥 **تصدير Excel:**")
         df_all_export = load_all_db_records()
         excel_data = export_to_excel_bytes(df_all_export)
         st.download_button(
-            label="تحميل كافة البيانات (.xlsx)",
+            label="📥 تحميل كافة البيانات (.xlsx)",
             data=excel_data,
             file_name="درجات_المواد_الأربع_شامل.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             type="primary"
         )
-        
-    with col_sync_fwd:
-        st.write("⬆️ **رفع وتحديث Google Sheets:**")
-        if st.button("تصدير البيانات إلى Google Sheets", type="secondary"):
+    with col_sync_box:
+        if st.button("⬆️ تصدير إلى Google Sheets", type="secondary"):
             success, msg = sync_db_to_gsheets()
-            if success: st.success(msg)
-            else: st.error(msg)
-            
-    with col_sync_rev:
-        st.write("⬇️ **المزامنة العكسية (سحب التعديلات):**")
-        if st.button("سحب التعديلات من Google Sheets", type="secondary"):
+            if success:
+                st.success(msg)
+            else:
+                st.error(msg)
+    with col_rev_box:
+        if st.button("⬇️ سحب التعديلات من Google Sheets", type="secondary"):
             success, msg = sync_gsheets_to_db_reverse()
             if success:
                 st.success(msg)
@@ -543,7 +574,7 @@ with tab_excel:
 # ---------------------------------------------------------
 with tab_add:
     st.subheader("➕ إضافة طالب جديد ورصد درجات المواد له")
-    with st.form("add_student_v12_form", clear_on_submit=True):
+    with st.form("add_student_v5_form", clear_on_submit=True):
         f1, f2 = st.columns(2)
         with f1:
             add_t = st.selectbox("الاختبار:", TESTS_LIST, index=TESTS_LIST.index(selected_test))
@@ -563,5 +594,4 @@ with tab_add:
                 st.error("يرجى كتابة اسم الطالب.")
             else:
                 save_new_student(add_t, add_g, add_c, add_s_name.strip(), add_s, add_m, add_l, add_e)
-                st.success(f"تمت إضافة الطالب ({add_s_name}) بنجاح ومزامنة بياناته!")
                 st.rerun()
