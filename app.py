@@ -1660,26 +1660,18 @@ with tab_entry:
 # التبويب الثاني: الرسم البياني والمقارنة
 # ---------------------------------------------------------
 with tab_charts:
-    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة وتحديد الاتجاه الأفقي
+    # تضمين تنسيق الطباعة وتحديد الاتجاه العرضي (Landscape) وإخفاء العناصر غير المرغوبة
     st.markdown("""
-    <style>
-    @media print {
-        @page {
-            size: A4 landscape;
-            margin: 6mm;
-        }
-        .main-header, 
-        .top-toolbar, 
-        header, 
-        [data-testid="stHeader"], 
-        [data-testid="stSidebar"], 
-        .stButton, 
-        .stSelectbox, 
-        .stMultiSelect {
-            display: none !important;
-        }
-    }
-    </style>
+        <style>
+            @media print {
+                @page {
+                    size: landscape;
+                }
+                .main-header, .top-toolbar, header, [data-testid="stHeader"], [data-testid="stSidebar"], .stButton, .stSelectbox, .stMultiSelect {
+                    display: none !important;
+                }
+            }
+        </style>
     """, unsafe_allow_html=True)
 
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
@@ -1753,10 +1745,8 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
-                # تم تصحيح القيمة هنا لتصبح range=
-fig_comp.update_layout(
-    title=f"مخطط رادار مقارنة الفصول - {selected_grade}", 
-    polar=dict(radialaxis=dict(visible=True, range=))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=)))
+
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
             st.plotly_chart(fig_comp, use_container_width=True)
 # ---------------------------------------------------------
