@@ -1532,7 +1532,7 @@ RAW_EXCEL_STUDENTS = [   {   'class': 'فصل 101',
 TESTS_LIST = ["الاختبار التشخيصي الأول", "الاختبار التشخيصي الثاني", "الاختبار التشخيصي الثالث", "الاختبار التشخيصي الرابع"]
 DB_FILE = "student_grades_v12.db"
 
-def init_db():
+def init_db(force=False):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("""
@@ -1551,7 +1551,9 @@ def init_db():
     """)
     
     c.execute("SELECT COUNT(*) FROM grades")
-    if c.fetchone()[0] == 0:
+    row_count = c.fetchone()[0]
+    if force or row_count < 10:
+        c.execute("DELETE FROM grades")
         initial_rows = []
         for rec in RAW_EXCEL_STUDENTS:
             initial_rows.append(("الاختبار التشخيصي الأول", rec["grade"], rec["class"], rec["seq"], rec["name"], rec["science"], rec["math"], rec["lughati"], rec["english"]))
@@ -1576,12 +1578,29 @@ def load_all_db_records():
 
 def load_class_students(test_name, grade_name, class_name):
     conn = sqlite3.connect(DB_FILE)
+    clean_t = str(test_name).strip()
+    clean_g = str(grade_name).strip()
+    clean_c = str(class_name).strip()
+    
     df = pd.read_sql_query("""
         SELECT id, seq_num AS 'المسلسل', student_name AS 'اسم الطالب', science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
         FROM grades
-        WHERE test_name = ? AND grade = ? AND class_name = ?
+        WHERE TRIM(test_name) = ? AND TRIM(grade) = ? AND TRIM(class_name) = ?
         ORDER BY seq_num ASC
-    """, conn, params=[test_name, grade_name, class_name])
+    """, conn, params=[clean_t, clean_g, clean_c])
+    
+    if df.empty:
+        g_short = clean_g.replace("الصف ", "").strip()
+        c_short = clean_c.replace("فصل ", "").strip()
+        df = pd.read_sql_query("""
+            SELECT id, seq_num AS 'المسلسل', student_name AS 'اسم الطالب', science AS 'علوم', math AS 'رياضيات', lughati AS 'لغتي', english AS 'انجليزي'
+            FROM grades
+            WHERE (TRIM(test_name) = ? OR TRIM(test_name) LIKE ?)
+              AND (TRIM(grade) = ? OR TRIM(grade) LIKE ?)
+              AND (TRIM(class_name) = ? OR TRIM(class_name) LIKE ?)
+            ORDER BY seq_num ASC
+        """, conn, params=[clean_t, f"%{clean_t}%", clean_g, f"%{g_short}%", clean_c, f"%{c_short}%"])
+        
     conn.close()
     return df
 
@@ -1670,7 +1689,12 @@ with tab_entry:
     df_students = load_class_students(selected_test, selected_grade, selected_class)
     
     if df_students.empty:
-        st.warning("لا توجد بيانات طلاب لهذا الفصل في هذا الاختبار.")
+        st.warning(f"⚠️ لا توجد بيانات طلاب حالياً لـ ({selected_test}) - {selected_grade} - {selected_class}.")
+        st.info("💡 قد تكون البيانات في قاعدة البيانات تضررت نتيجة سحب فارغ من Google Sheets.")
+        if st.button("🔄 استعادة قاعدة بيانات جميع الفصول والطلاب (166 طالب)", type="primary"):
+            init_db(force=True)
+            st.success("تمت استعادة كافة بيانات الفصول والطلاب بنجاح!")
+            st.rerun()
     else:
         legend_html = """<div class="color-legend">
             <span style="font-weight:800; color:#1e3a8a;">🎨 دليل التنسيق الشرطي للدرجات:</span>
