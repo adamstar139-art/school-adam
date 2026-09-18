@@ -1660,43 +1660,40 @@ with tab_entry:
 # التبويب الثاني: الرسم البياني والمقارنة
 # ---------------------------------------------------------
 with tab_charts:
+    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة
+    st.markdown("""
+    <style>
+    @media print {
+        .main-header, .top-toolbar, header, [data-testid="stHeader"], [data-testid="stSidebar"], .stButton, .stSelectbox, .stMultiSelect {
+            display: none !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
-    col_ch_multi, col_ch_orient, col_ch_print = st.columns([4, 4, 3])
+    
+    col_ch_print, col_ch_multi = st.columns([3, 4])
+    
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
-        selected_classes_compare = st.multiselect("📚 اختر الفصول للمقارنة:", avail_classes, default=avail_classes)
-       with col_ch_print:
+        selected_classes_compare = st.multiselect(
+            "📚 اختر الفصول المراد المقارنة بينها:",
+            avail_classes,
+            default=avail_classes
+        )
+        
+    with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
+            st.components.v1.html("""<script>
+                setTimeout(function() { window.parent.print(); }, 300);
+            </script>""", height=0)
 
-    # تطبيق الاتجاه المختار للرسم البياني عند الطباعة
-    if "أفقي" in chart_print_orient:
-        st.markdown("""<style>
-            @media print {
-                @page { size: A4 landscape !important; margin: 6mm !important; }
-                div[data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container, .svg-container {
-                    width: 100% !important;
-                    height: 80vh !important;
-                    max-height: 175mm !important;
-                    page-break-inside: avoid !important;
-                }
-            }
-        </style>""", unsafe_allow_html=True)
-    else:
-        st.markdown("""<style>
-            @media print {
-                @page { size: A4 portrait !important; margin: 6mm !important; }
-                div[data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container, .svg-container {
-                    width: 100% !important;
-                    height: 60vh !important;
-                    max-height: 240mm !important;
-                    page-break-inside: avoid !important;
-                }
-            }
-        </style>""", unsafe_allow_html=True)
-
-    chart_shape = st.selectbox("شكل الرسم البياني للمقارنة:", ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"])
+    chart_shape = st.selectbox(
+        "شكل الرسم البياني للمقارنة:",
+        ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"]
+    )
 
     if not selected_classes_compare:
         st.warning("يرجى اختيار فصل واحد على الأقل للمقارنة.")
@@ -1713,7 +1710,9 @@ with tab_charts:
         df_comp = pd.read_sql_query(query, conn, params=params)
         conn.close()
 
-        if not df_comp.empty:
+        if df_comp.empty:
+            st.info("لا توجد بيانات للفصول المختارة.")
+        else:
             df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']] = df_comp[['علوم', 'رياضيات', 'لغتي', 'انجليزي']].round(2)
             df_melted = df_comp.melt(id_vars=['class_name'], var_name='المادة', value_name='متوسط الدرجة')
 
@@ -1722,6 +1721,7 @@ with tab_charts:
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', barmode='group',
                     text='متوسط الدرجة',
                     title=f"مقارنة متوسط درجات المواد بين فصول {selected_grade}",
+                    labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
                 )
                 fig_comp.update_traces(textposition='outside')
@@ -1729,18 +1729,23 @@ with tab_charts:
                 fig_comp = px.line(
                     df_melted, x='class_name', y='متوسط الدرجة', color='المادة', markers=True,
                     title=f"منحنى مقارنة أداء المواد بين فصول {selected_grade}",
+                    labels={'class_name': 'الفصل', 'متوسط الدرجة': 'متوسط الدرجة (من 10)'},
                     color_discrete_sequence=['#2563eb', '#ef4444', '#16a34a', '#6b7280']
                 )
             else:
                 fig_comp = go.Figure()
                 for c_name in selected_classes_compare:
                     c_data = df_melted[df_melted['class_name'] == c_name]
-                    fig_comp.add_trace(go.Scatterpolar(r=c_data['متوسط الدرجة'], theta=c_data['المادة'], fill='toself', name=c_name))
-                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}")
+                    fig_comp.add_trace(go.Scatterpolar(
+                        r=c_data['متوسط الدرجة'],
+                        theta=c_data['المادة'],
+                        fill='toself',
+                        name=c_name
+                    ))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[5])))
 
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
             st.plotly_chart(fig_comp, use_container_width=True)
-
 # ---------------------------------------------------------
 # التبويب الثالث: التصدير والمزامنة المزدوجة
 # ---------------------------------------------------------
