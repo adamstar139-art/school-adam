@@ -136,17 +136,44 @@ css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/lib
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
     html, body, [class*="css"] { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
-    .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    .main-header h1 { font-size: 26px; font-weight: 800; margin: 0 0 8px 0; color: #ffffff; }
-    .main-header p { font-size: 15px; margin: 0; opacity: 0.9; }
-    .designer-banner { margin-top: 12px; background: rgba(255, 255, 255, 0.15); padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; }
+    
+    /* الترويسة الرئيسية - التوسط والترتيب */
+    .main-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        text-align: center !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .main-header h1 { font-size: 26px; font-weight: 800; margin: 0 0 8px 0; color: #ffffff; text-align: center !important; }
+    .main-header p { font-size: 15px; margin: 0; opacity: 0.9; text-align: center !important; }
+    .designer-banner {
+        margin-top: 12px;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 6px 14px;
+        border-radius: 8px;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px;
+        text-align: center !important;
+    }
     .designer-icon { color: #f59e0b; font-size: 14px; }
     .designer-text { color: #ffffff; font-weight: 700; font-size: 13px; }
+    
     .top-toolbar { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
     .save-indicator { color: #16a34a; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
     .color-legend { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
     .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
     .color-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+    
+    /* الجداول */
     .custom-grade-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .custom-grade-table th { background: #1e3a8a; color: white; padding: 12px 10px; text-align: center; font-weight: 700; font-size: 14px; border: 1px solid #1e40af; }
     .custom-grade-table td { padding: 10px; text-align: center; border: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; }
@@ -157,24 +184,60 @@ css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/lib
     .td-name { text-align: right !important; padding-right: 15px !important; font-weight: 700; color: #1e293b; }
     .td-seq { font-weight: 700; color: #64748b; background: #f8fafc; }
 
+    /* إعدادات الطباعة المتقدمة وملاءمة الرسوم البيانية والجداول */
     @media print {
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+
         header, [data-testid="stHeader"], [data-testid="stSidebar"], 
-        .main-header, .top-toolbar, .stButton, .stSelectbox, .stMultiSelect, 
+        .top-toolbar, .stButton, .stSelectbox, .stMultiSelect, 
         .stCheckbox, [data-testid="stForm"], .no-print, .color-legend,
-        div[data-testid="stToolbar"] {
+        div[data-testid="stToolbar"], button, iframe[title="st.iframe"] {
             display: none !important;
         }
-        body, html, [data-testid="stAppViewContainer"], .main {
+
+        body, html, [data-testid="stAppViewContainer"], .main, .block-container, [data-testid="stVerticalBlock"] {
             background: #ffffff !important;
             color: #000000 !important;
             padding: 0 !important;
             margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
         }
+
+        /* ملاءمة الرسوم البيانية لتبدو كاملة بدون اقتطاع */
+        div[data-testid="stPlotlyChart"], 
+        .js-plotly-plot, 
+        .plot-container, 
+        .svg-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            overflow: visible !important;
+            margin: 0 auto !important;
+        }
+
+        .js-plotly-plot .plotly .main-svg {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+        }
+
         .custom-grade-table {
             width: 100% !important;
-            font-size: 11pt !important;
+            font-size: 10pt !important;
             border: 2px solid #000 !important;
             box-shadow: none !important;
+            page-break-inside: auto;
+        }
+        .custom-grade-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
         .custom-grade-table th {
             background-color: #1e3a8a !important;
@@ -1641,7 +1704,7 @@ init_db()
 # =========================================================
 # 3. الهيدر وشريط الأدوات العلوي Main Header
 # =========================================================
-header_html = """<div class="main-header">
+header_html = """<div class="main-header" style="text-align: center;">
     <h1><i class="fa-solid fa-graduation-cap"></i> نظام رصد الدرجات والرسوم البيانية</h1>
     <p>متوسطة الثغر النموذجية الأهلية - إدارة التحصيل الدراسي والاختبارات التشخيصية</p>
     <div class="designer-banner">
@@ -1832,7 +1895,7 @@ with tab_charts:
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 200);</script>""", height=0)
+            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
 
     chart_shape = st.selectbox("شكل الرسم البياني للمقارنة:", ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"])
 
