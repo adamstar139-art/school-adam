@@ -931,15 +931,7 @@ RAW_EXCEL_STUDENTS = [
         'name': 'عبد الله فهد جلوي سالم الشرعي',
         'science': 0.0,
         'seq': 11},
-    {   'class': 'فصل 301',
-        'english': 0.0,
-        'grade': 'الصف الثالث المتوسط',
-        'lughati': 0.0,
-        'math': 0.0,
-        'name': 'علي إبراهيم علي الأسمري',
-        'science': 0.0,
-        'seq': 12},
-    {   'class': 'فصل 301',
+       {   'class': 'فصل 301',
         'english': 6.0,
         'grade': 'الصف الثالث المتوسط',
         'lughati': 0.0,
@@ -1673,9 +1665,7 @@ with tab_charts:
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
         selected_classes_compare = st.multiselect("📚 اختر الفصول للمقارنة:", avail_classes, default=avail_classes)
-    with col_ch_orient:
-        chart_print_orient = st.radio("📐 اتجاه طباعة الرسم البياني:", ["أفقي (Landscape)", "عمودي (Portrait)"], index=0, horizontal=True)
-    with col_ch_print:
+       with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
             st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
