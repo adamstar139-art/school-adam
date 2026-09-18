@@ -64,11 +64,19 @@ def sync_gsheets_to_db_reverse():
         ws = get_gsheet_worksheet()
         if ws is None:
             return False, "⚠️ تعذر الاتصال بـ Google Sheets. يُرجى التثبت من إعدادات Streamlit Secrets."
-        records = ws.get_all_records()
-        if not records:
-            return False, "⚠️ جدول Google Sheets فارغ أو لا يحتوي على بيانات."
         
-        df_gsheet = pd.DataFrame(records)
+        all_values = ws.get_all_values()
+        if not all_values or len(all_values) < 2:
+            return False, "⚠️ جدول Google Sheets فارغ أو لا يحتوي على بيانات."
+            
+        headers = [str(h).strip() for h in all_values[0]]
+        rows = all_values[1:]
+        
+        df_gsheet = pd.DataFrame(rows, columns=headers)
+        # إزالة الأعمدة المكررة أو الفارغة في الترويسة للتغلب على أخطاء الأعمدة الخالية في Google Sheets
+        df_gsheet = df_gsheet.loc[:, ~df_gsheet.columns.duplicated()]
+        if '' in df_gsheet.columns:
+            df_gsheet = df_gsheet.drop(columns=[''])
         required_cols = ['المعرف', 'الاختبار', 'الصف الدراسي', 'الفصل', 'المسلسل', 'اسم الطالب', 'علوم', 'رياضيات', 'لغتي', 'انجليزي']
         missing_cols = [c for c in required_cols if c not in df_gsheet.columns]
         if missing_cols:
@@ -184,18 +192,27 @@ css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/lib
     .td-name { text-align: right !important; padding-right: 15px !important; font-weight: 700; color: #1e293b; }
     .td-seq { font-weight: 700; color: #64748b; background: #f8fafc; }
 
-    /* إعدادات الطباعة المتقدمة وملاءمة الرسوم البيانية والجداول */
+    /* إخفاء عناصر التحكم عند الطباعة */
+    .no-print { display: block; }
+
+    /* إعدادات الطباعة المتقدمة الاحترافية */
     @media print {
         @page {
-            size: A4 landscape;
-            margin: 8mm;
+            size: A4 portrait;
+            margin: 6mm;
         }
 
+        /* إخفاء كافة عناصر التحكم والتنقل وجدول الرصد المباشر */
         header, [data-testid="stHeader"], [data-testid="stSidebar"], 
-        .top-toolbar, .stButton, .stSelectbox, .stMultiSelect, 
+        .main-header, .top-toolbar, .stButton, .stSelectbox, .stMultiSelect, 
         .stCheckbox, [data-testid="stForm"], .no-print, .color-legend,
-        div[data-testid="stToolbar"], button, iframe[title="st.iframe"] {
+        div[data-testid="stToolbar"], button, iframe[title="st.iframe"],
+        div[data-testid="stDataEditor"], div[data-testid="stDataFrame"],
+        .stDataEditor, hr {
             display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         body, html, [data-testid="stAppViewContainer"], .main, .block-container, [data-testid="stVerticalBlock"] {
@@ -208,42 +225,30 @@ css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/lib
             overflow: visible !important;
         }
 
-        /* ملاءمة الرسوم البيانية لتبدو كاملة بدون اقتطاع */
-        div[data-testid="stPlotlyChart"], 
-        .js-plotly-plot, 
-        .plot-container, 
-        .svg-container {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            overflow: visible !important;
-            margin: 0 auto !important;
-        }
-
-        .js-plotly-plot .plotly .main-svg {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-        }
-
+        /* طباعة الجدول المنسق فقط في صفحة واحدة احترافية */
         .custom-grade-table {
             width: 100% !important;
-            font-size: 10pt !important;
-            border: 2px solid #000 !important;
+            font-size: 9pt !important;
+            border-collapse: collapse !important;
+            border: 1.5px solid #1e3a8a !important;
             box-shadow: none !important;
-            page-break-inside: auto;
-        }
-        .custom-grade-table tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
+            margin-top: 5px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
         .custom-grade-table th {
             background-color: #1e3a8a !important;
             color: #ffffff !important;
+            padding: 5px 4px !important;
+            font-size: 9.5pt !important;
+            border: 1px solid #1e40af !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+        .custom-grade-table td {
+            padding: 3.5px 4px !important;
+            font-size: 9pt !important;
+            border: 1px solid #cbd5e1 !important;
         }
         .score-green {
             background-color: #bbf7d0 !important;
@@ -256,6 +261,33 @@ css_code = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/lib
             color: #7f1d1d !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+        .score-zero {
+            background-color: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* طباعة الرسوم البيانية في صفحة واحدة واضحة وبكامل أبعادها */
+        div[data-testid="stPlotlyChart"], 
+        .js-plotly-plot, 
+        .plot-container, 
+        .svg-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 75vh !important;
+            max-height: 220mm !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            overflow: hidden !important;
+            margin: 0 auto !important;
+        }
+
+        .js-plotly-plot .plotly .main-svg {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100% !important;
         }
     }
 </style>"""
@@ -1783,7 +1815,7 @@ with tab_entry:
             if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
                 st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 200);</script>""", height=0)
 
-        st.write("✏️ **جدول الرصد المنظم والتعديل التفاعلي:**")
+        st.markdown('<div class="no-print">✏️ <b>جدول الرصد المنظم والتعديل التفاعلي:</b></div>', unsafe_allow_html=True)
 
         edited_df = st.data_editor(
             df_students[['id', 'المسلسل', 'اسم الطالب', 'علوم', 'رياضيات', 'لغتي', 'انجليزي']],
@@ -1807,7 +1839,7 @@ with tab_entry:
             st.rerun()
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.write("📊 **عرض جدول الرصد المنسق بالكامل:**")
+        st.markdown('<div class="no-print">📊 <b>عرض جدول الرصد المنسق بالكامل:</b></div>', unsafe_allow_html=True)
 
         def build_html_grade_table(df_data, is_blank=False):
             rows_html = ""
