@@ -1832,7 +1832,7 @@ with tab_charts:
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
+            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 200);</script>""", height=0)
 
     chart_shape = st.selectbox("شكل الرسم البياني للمقارنة:", ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"])
 
