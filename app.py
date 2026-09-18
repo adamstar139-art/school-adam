@@ -1757,7 +1757,6 @@ with tab_charts:
 fig_comp.update_layout(
     title=f"مخطط رادار مقارنة الفصول - {selected_grade}", 
     polar=dict(radialaxis=dict(visible=True, range=))
-)
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
             st.plotly_chart(fig_comp, use_container_width=True)
 # ---------------------------------------------------------
