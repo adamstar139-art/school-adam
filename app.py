@@ -1,10 +1,10 @@
-import os
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import sqlite3
 import io
+import os
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -13,11 +13,12 @@ from google.oauth2.service_account import Credentials
 # =========================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1XuneQDIfvpqKiuPQ-BcNBfOOm2G4vFBvwIa5F5gV15g/edit?usp=sharing"
 
+# البيانات الجديدة لحساب الخدمة
 SERVICE_ACCOUNT_INFO = {
   "type": "service_account",
   "project_id": "level-hope-509007-d2",
-  "private_key_id": "c42734f035259f1f2255f53212a9d30ba68cd1a9",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCbobkzWaaWX2Qu\nXHWl+wf9PMlAkvP+XWgiB0NN/QED3s3qepXV1STYFJMD6/8SjXg/IcSxVguPHFJs\n5vKphFiKNsxQvgAMjgRAhB55FQ3LYWulaQ9Zgs6xpiSnZwZSN4X3ksceV7xozn13\nGKiZIP7YmuNlGg6piI3/+NGdiysvmg7F0sZedmmqE5Yasn1d450WbK1UDA12nBnB\nDfOPjKtQe28yqbj2Hm9veBfHuuIGZlnFJEbitOEoUjluZFb+3shHCsMo/FgpA9MI\nq2GG+yAK9jd0NVIEzPEhI/F77Rg4Q5EADTEs8b1kr/7eXDK/NKDCgRgqzCR/x0Db\n5v1UYHN/AgMBAAECggEARAGDuX4TzsKpNp79Y8WRZKWStY5hYwWy8qekz+fd8TCD\nX1IotjM4sdkvsreFkrhR0phxaCJW07bHB8JVSCDGRcMTPbcAs3u9POnenP9Hs1cD\nIFkLtYv0wOj+PE5HE1ciyZ+QNeCVumB8r7WNOriR09m+wteDj65VioRSKFr/SIGF\nLUzb8k55DrGn9626xxM2ugtvBir99yGCIzOjscoipkF+CiY5a9uWluZl7dgZKqYu\nj3CEuRe1NUatB4jU6Fnf8xW/QnYYVG2HB+zCNkesLw6DP1azfN+7G9R5gn6E7mnW\n3aUt8wKIZN2Wgd2NpoGJ03o/Wfc0h99gCuAGCo1PKQKBgQDNjXxRl8+ETPvZIrb2\nj4Z0VsebmugCdPP3T9wO+yZXtNmW0nf+8t4oZVn5paQdiS8z0rZd58VUFJRSHRpH\ndUZ11iOv7889oaLsy/2YQicY8GS+1+AWLbS4l5CIgBFxuuqjFRxO9e09Ac1+LbnP\neUjxqTGOC/iv9CYRkHaRJGV1KQKBgQDB08rUoYOj9SKn9nYJNvsebilRKQVThpJH\nqwnvXZlDcArzgV7FcN6X7Vi2SYwAk7sAXpOdXaz7UAVO5m4Idv+plh/OMktQ4lr2\nyeLoLR4hcQOmg/SzEoIFvTey0GLDtVvZm5PDB0OMBrPc5kmiLuC50kqjSYUMZszp\nh6muBBXQZwKBgCXunCh6eWMSyc8SJu1tIwTJFuDSP0pkxri21gc1taetyhGZGWfE\n7dZKjcYSGS0SKdHIarr9kF6pxY05raXOMIiCUeefu4DGGUjVhCDa5Fgn1I+bStEM\n8jK2VYe7Cn0QX0hlFupDW9pMQN2uFoIBAcMG1AxAjU37IiNPo3G5Y7exAoGAX7JW\nsVaxLPEp1C2+J1yK7YJMSfLr20pUzKeotxLKSd52ubUE+ox4iiA4LX/wbJSDvnHz\nhb2rW0Ut6b+hUfKW1b72IxL31o57hN82dZVZC//FYqBB32vi4DyE1HdIXAIdwDms\n4Zyjf+4LPaRBdJ6ae4RVL3tsAix7PU2qu+zubD8CgYAX8UhV3i6e1gIIO4kuJZV2\nhZoV3SZJ9JzNm5UHLeti7PMvcUKvUzG0b4OtsD/PFRgSh5uV1wG8yjviIb9yQRJa\n3vssSl148U5gB/sZwru8rte/rWNuxd/hif0gXMul6i0QuXRDhZqomqxZ4EzwYY7O\nGM8q3+/zsMUq5r4AQjzahg==\n-----END PRIVATE KEY-----\n",
+  "private_key_id": "b1f74d610d4ab0e23049c863168381cc6605b35b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDHL1smx2MZ0hIu\nBLHIVbRtRHWxbSfNeTV8Hk4re73L6XZpt8DMtJgZ7R/1o+wu3Nn7tWl9GYOQs99a\nI3uxH38Fi5/P9dbRrmlqd4mgXLRtjTTKomwCcq1X9Llo2MZU4rZZlb9t156WZTXu\nwxmLsq9+PiJ3JQWYxwLJakj1tUO7ZCxW0/JB29PgSaiz4zKc7JCiCuVEHOSWhmCu\nvcKJcdyoO5d3UfCKQYXfswb96cNgLOJnVG7uHvu6UvwlJ5XsEy5DFDgcFMJ0s51h\nNStE1n2ZAI+80VQ4SJPg16yqMXzsibCy0oItqq4QdJBfKNMaSJKmbMPHggQ4jUuS\nJ58UwMHnAgMBAAECggEAHi5XHHV31wYVX8hcUTkTTBSPKiGaYgWst1rhiLCI82iJ\nBb8kb/V+r+cAlw2N5b1B1mRdpelYyHNI3kqkHRQ4Vf8bFGgcHczUskox82I4q0+L\nIUJ3z+3PxZUSXF2vElZWlRUeBXx3eN3Ad1DerQ6X4tlytXpJnSWtOWxpE7oHQlHI\nKLhSonmL+LK4oS24Qqs0OC2lNULor2b3nBE7MV8tKW52vbhSRhcWum5l86RP94xR\nub5aNfRN7O4aNeXy4VwcaRLWtx/0YuK5H8eEQqHGTq1YNcqhwnrCGmJgzKfSWE5J\nl/EjtfzqAQtqCFvnFn/9yUJMKm2hInBDQZ8CwVHrEQKBgQD/Ins3Ia5wSOEZKuBm\nkD3wWmg30qsI7TOx+O0v8YtfY96HNtXPmn7cpfTtcOu5h1fLxNubib3e9B+PkSUM\nwZqzOdJ6u9/8yHnkMwSYc1SFmJ++N5vGyR+rJgRl0eJnbEpxnQQ9Z2IhAVSIhmyc\n1vo9NHJvvRIP22ocqyKJxlvrmQKBgQDH3Ev+yzP8Vnx0PuuBu+/ivzjO1INCupQX\n9XXHXaebk6du5ITTPB5qUYrf3RL7SP31jszVg+uYS6BzdhfGeqDSsMzySPqIDhcy\nFRb0xuuDEh1sxSnyL8WH6kXsJsZMJE8uScRg0/tmxwanJzfze758HeQnzSxPwmOz\nQgPT1+KJfwKBgCMCd0f0bjxoM8NBV/Oa/XTa4wwt81xROFPGpb17drWLPcDuLF7F\ng30BpN9kLGSUBt8mT0BDoXNTqnUH5L6gXnsThydiWnUUiW1f9tR4lvOSIvF2LgEU\nHi1dFSNnrpqkiH6YnjlS02tWBGSLlaHb+hCl/sIIfs8AO8pdTWr8diaZAoGACCU7\nV6wSd1NTCS3TTVtKgJRIjW1t2Bdgl8ViQnjXruiKp2Na4n0NxEmEfnE1J9amuw5R\n3NXekTtr06jZeTZgPZYFFE7THx5r5Zekct90k8f2OQukFQHLbCmpJeHCrTHBpGJP\nRZ7+HQc5hzB7AEpnzgkt1k1vY+TJSXIEU+r1iaMCgYBHX0Tekr9ykqYUVOithrFF\nj3ENM5+mcr+st7GbnN2UzrGw3JVil+Ac8cp9oO6KTXBfhBJYq5qoavjSxUoh8wDw\nCUG/Dj9i3BV5Jo0zaZxeG3SMemj37MDhXzPftiegSBcgdc8e9ddnszxvRTqk8cum\nRuRRGynSKFJceF6B8eJNRw==\n-----END PRIVATE KEY-----\n",
   "client_email": "mohamed-samy@level-hope-509007-d2.iam.gserviceaccount.com",
   "client_id": "101141263500943756197",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -28,15 +29,22 @@ SERVICE_ACCOUNT_INFO = {
 }
 
 def get_gsheet_worksheet():
-    """الاتصال بـ Google Sheets مع دعم التحميل من ملف JSON أو st.secrets أو المفتاح المدمج"""
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    """الاتصال بـ Google Sheets مع دعم التحميل من service_account.json أو st.secrets أو المعامل المدمج"""
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    # 1. المحاولة الأولى: قراءة ملف service_account.json محلي إذا كان موجوداً
     if os.path.exists("service_account.json"):
         try:
             creds = Credentials.from_service_account_file("service_account.json", scopes=scopes)
             client = gspread.authorize(creds)
             return client.open_by_url(SPREADSHEET_URL).sheet1
         except Exception as e:
-            st.warning(f"❌ فشل الاتصال عبر ملف service_account.json: {e}")
+            st.warning(f"تعذر الاتصال عبر ملف service_account.json: {e}")
+
+    # 2. المحاولة الثانية: استخدام st.secrets من منصة Streamlit Cloud
     if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
         try:
             info = dict(st.secrets["gcp_service_account"])
@@ -46,7 +54,9 @@ def get_gsheet_worksheet():
             client = gspread.authorize(creds)
             return client.open_by_url(SPREADSHEET_URL).sheet1
         except Exception as e:
-            st.warning(f"❌ فشل الاتصال عبر st.secrets: {e}")
+            st.warning(f"تعذر الاتصال عبر st.secrets: {e}")
+
+    # 3. المحاولة الثالثة: استخدام المفتاح الجديد المدمج بالقواميس مع معالجة آمنة لأسطر private_key
     try:
         info = dict(SERVICE_ACCOUNT_INFO)
         if "private_key" in info and isinstance(info["private_key"], str):
@@ -55,8 +65,9 @@ def get_gsheet_worksheet():
         client = gspread.authorize(creds)
         return client.open_by_url(SPREADSHEET_URL).sheet1
     except Exception as e:
-        st.error(f"❌ خطأ في الاتصال بـ Google Sheets: {e}")
+        st.error(f"خطأ في الاتصال بـ Google Sheets: {e}")
         return None
+
 def sync_db_to_gsheets():
     """مزامنة كافة بيانات SQLite المحلية وتصديرها إلى Google Sheets (مزامنة للأمام)"""
     ws = get_gsheet_worksheet()
@@ -521,32 +532,30 @@ with tab_charts:
 # التبويب الثالث: التصدير والمزامنة المزدوجة
 # ---------------------------------------------------------
 with tab_excel:
-    st.subheader("🟢 استيراد وتصدير والمزامنة المزدوجة (SQLite ↔ Google Sheets)")
-    
-    col_exp_box, col_sync_fwd, col_sync_rev = st.columns(3)
+    st.subheader("🟢 التصدير والمزامنة المزدوجة (SQLite ↔ Google Sheets)")
+    col_exp_box, col_sync_box, col_rev_box = st.columns(3)
     
     with col_exp_box:
-        st.write("📥 **تصدير Excel:**")
         df_all_export = load_all_db_records()
         excel_data = export_to_excel_bytes(df_all_export)
         st.download_button(
-            label="تحميل كافة البيانات (.xlsx)",
+            label="📥 تحميل كافة البيانات كملف Excel (.xlsx)",
             data=excel_data,
             file_name="درجات_المواد_الأربع_شامل.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             type="primary"
         )
         
-    with col_sync_fwd:
-        st.write("⬆️ **رفع وتحديث Google Sheets:**")
-        if st.button("تصدير البيانات إلى Google Sheets", type="secondary"):
+    with col_sync_box:
+        if st.button("📤 رفع المزامنة من SQLite إلى Google Sheets", type="secondary"):
             success, msg = sync_db_to_gsheets()
-            if success: st.success(msg)
-            else: st.error(msg)
-            
-    with col_sync_rev:
-        st.write("⬇️ **المزامنة العكسية (سحب التعديلات):**")
-        if st.button("سحب التعديلات من Google Sheets", type="secondary"):
+            if success:
+                st.success(msg)
+            else:
+                st.error(msg)
+                
+    with col_rev_box:
+        if st.button("📥 سحب التعديلات من Google Sheets إلى SQLite", type="secondary"):
             success, msg = sync_gsheets_to_db_reverse()
             if success:
                 st.success(msg)
@@ -559,7 +568,7 @@ with tab_excel:
 # ---------------------------------------------------------
 with tab_add:
     st.subheader("➕ إضافة طالب جديد ورصد درجات المواد له")
-    with st.form("add_student_v12_form", clear_on_submit=True):
+    with st.form("add_student_v7_form", clear_on_submit=True):
         f1, f2 = st.columns(2)
         with f1:
             add_t = st.selectbox("الاختبار:", TESTS_LIST, index=TESTS_LIST.index(selected_test))
