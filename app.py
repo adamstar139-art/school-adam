@@ -1660,11 +1660,22 @@ with tab_entry:
 # التبويب الثاني: الرسم البياني والمقارنة
 # ---------------------------------------------------------
 with tab_charts:
-    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة
+    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة وتحديد اتجاه الطباعة أفقياً (A4 Landscape)
     st.markdown("""
     <style>
     @media print {
-        .main-header, .top-toolbar, header, [data-testid="stHeader"], [data-testid="stSidebar"], .stButton, .stSelectbox, .stMultiSelect {
+        @page {
+            size: A4 landscape;
+            margin: 6mm;
+        }
+        .main-header, 
+        .top-toolbar, 
+        header, 
+        [data-testid="stHeader"], 
+        [data-testid="stSidebar"], 
+        .stButton, 
+        .stSelectbox, 
+        .stMultiSelect {
             display: none !important;
         }
     }
@@ -1672,9 +1683,9 @@ with tab_charts:
     """, unsafe_allow_html=True)
 
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
-    
-    col_ch_print, col_ch_multi = st.columns([3, 4])
-    
+
+    col_ch_print, col_ch_multi = st.columns()
+
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
         selected_classes_compare = st.multiselect(
@@ -1742,7 +1753,7 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
-                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=[5])))
+                fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=)))
 
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
             st.plotly_chart(fig_comp, use_container_width=True)
