@@ -1659,16 +1659,19 @@ with tab_entry:
 # ---------------------------------------------------------
 # التبويب الثاني: الرسم البياني والمقارنة
 # ---------------------------------------------------------
-with tab_charts:
-    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة
-    st.markdown("""
-    <style>
-    @media print {
-        .main-header, .top-toolbar, header, [data-testid="stHeader"], [data-testid="stSidebar"], .stButton, .stSelectbox, .stMultiSelect {
-            display: none !important;
+with tab_charts: 
+    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة وتحديد الاتجاه الأفقي
+    st.markdown(""" 
+    <style> 
+    @media print { 
+        @page {
+            size: landscape; /* جعل اتجاه الطباعة أفقياً تلقائياً */
         }
-    }
-    </style>
+        .main-header, .top-toolbar, header, [data-testid="stHeader"], [data-testid="stSidebar"], .stButton, .stSelectbox, .stMultiSelect { 
+            display: none !important; 
+        } 
+    } 
+    </style> 
     """, unsafe_allow_html=True)
 
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
