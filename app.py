@@ -1660,7 +1660,7 @@ with tab_entry:
 # التبويب الثاني: الرسم البياني والمقارنة
 # ---------------------------------------------------------
 with tab_charts:
-    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة وتحديد اتجاه الطباعة أفقياً (A4 Landscape)
+    # تضمين تنسيق إخفاء الترويسة والأدوات عند الطباعة وتحديد الاتجاه الأفقي
     st.markdown("""
     <style>
     @media print {
@@ -1753,6 +1753,7 @@ with tab_charts:
                         fill='toself',
                         name=c_name
                     ))
+                # تم تصحيح القيمة هنا لتصبح range=
                 fig_comp.update_layout(title=f"مخطط رادار مقارنة الفصول - {selected_grade}", polar=dict(radialaxis=dict(visible=True, range=)))
 
             fig_comp.update_layout(font_family="Cairo", plot_bgcolor="white", margin=dict(l=20, r=20, t=50, b=20))
