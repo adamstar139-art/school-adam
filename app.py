@@ -9,42 +9,18 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # =========================================================
-# 0. إعدادات حساب الخدمة والربط بـ Google Sheets
+# 0. إعدادات حساب الخدمة والربط بـ Google Sheets عبر st.secrets
 # =========================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1XuneQDIfvpqKiuPQ-BcNBfOOm2G4vFBvwIa5F5gV15g/edit?usp=sharing"
 
-# البيانات الجديدة لحساب الخدمة
-SERVICE_ACCOUNT_INFO = {
-  "type": "service_account",
-  "project_id": "level-hope-509007-d2",
-  "private_key_id": "b1f74d610d4ab0e23049c863168381cc6605b35b",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDHL1smx2MZ0hIu\nBLHIVbRtRHWxbSfNeTV8Hk4re73L6XZpt8DMtJgZ7R/1o+wu3Nn7tWl9GYOQs99a\nI3uxH38Fi5/P9dbRrmlqd4mgXLRtjTTKomwCcq1X9Llo2MZU4rZZlb9t156WZTXu\nwxmLsq9+PiJ3JQWYxwLJakj1tUO7ZCxW0/JB29PgSaiz4zKc7JCiCuVEHOSWhmCu\nvcKJcdyoO5d3UfCKQYXfswb96cNgLOJnVG7uHvu6UvwlJ5XsEy5DFDgcFMJ0s51h\nNStE1n2ZAI+80VQ4SJPg16yqMXzsibCy0oItqq4QdJBfKNMaSJKmbMPHggQ4jUuS\nJ58UwMHnAgMBAAECggEAHi5XHHV31wYVX8hcUTkTTBSPKiGaYgWst1rhiLCI82iJ\nBb8kb/V+r+cAlw2N5b1B1mRdpelYyHNI3kqkHRQ4Vf8bFGgcHczUskox82I4q0+L\nIUJ3z+3PxZUSXF2vElZWlRUeBXx3eN3Ad1DerQ6X4tlytXpJnSWtOWxpE7oHQlHI\nKLhSonmL+LK4oS24Qqs0OC2lNULor2b3nBE7MV8tKW52vbhSRhcWum5l86RP94xR\nub5aNfRN7O4aNeXy4VwcaRLWtx/0YuK5H8eEQqHGTq1YNcqhwnrCGmJgzKfSWE5J\nl/EjtfzqAQtqCFvnFn/9yUJMKm2hInBDQZ8CwVHrEQKBgQD/Ins3Ia5wSOEZKuBm\nkD3wWmg30qsI7TOx+O0v8YtfY96HNtXPmn7cpfTtcOu5h1fLxNubib3e9B+PkSUM\nwZqzOdJ6u9/8yHnkMwSYc1SFmJ++N5vGyR+rJgRl0eJnbEpxnQQ9Z2IhAVSIhmyc\n1vo9NHJvvRIP22ocqyKJxlvrmQKBgQDH3Ev+yzP8Vnx0PuuBu+/ivzjO1INCupQX\n9XXHXaebk6du5ITTPB5qUYrf3RL7SP31jszVg+uYS6BzdhfGeqDSsMzySPqIDhcy\nFRb0xuuDEh1sxSnyL8WH6kXsJsZMJE8uScRg0/tmxwanJzfze758HeQnzSxPwmOz\nQgPT1+KJfwKBgCMCd0f0bjxoM8NBV/Oa/XTa4wwt81xROFPGpb17drWLPcDuLF7F\ng30BpN9kLGSUBt8mT0BDoXNTqnUH5L6gXnsThydiWnUUiW1f9tR4lvOSIvF2LgEU\nHi1dFSNnrpqkiH6YnjlS02tWBGSLlaHb+hCl/sIIfs8AO8pdTWr8diaZAoGACCU7\nV6wSd1NTCS3TTVtKgJRIjW1t2Bdgl8ViQnjXruiKp2Na4n0NxEmEfnE1J9amuw5R\n3NXekTtr06jZeTZgPZYFFE7THx5r5Zekct90k8f2OQukFQHLbCmpJeHCrTHBpGJP\nRZ7+HQc5hzB7AEpnzgkt1k1vY+TJSXIEU+r1iaMCgYBHX0Tekr9ykqYUVOithrFF\nj3ENM5+mcr+st7GbnN2UzrGw3JVil+Ac8cp9oO6KTXBfhBJYq5qoavjSxUoh8wDw\nCUG/Dj9i3BV5Jo0zaZxeG3SMemj37MDhXzPftiegSBcgdc8e9ddnszxvRTqk8cum\nRuRRGynSKFJceF6B8eJNRw==\n-----END PRIVATE KEY-----\n",
-  "client_email": "mohamed-samy@level-hope-509007-d2.iam.gserviceaccount.com",
-  "client_id": "101141263500943756197",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/mohamed-samy%40level-hope-509007-d2.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-
 def get_gsheet_worksheet():
-    """الاتصال بـ Google Sheets مع دعم التحميل من service_account.json أو st.secrets أو المعامل المدمج"""
+    """الاتصال بـ Google Sheets عبر st.secrets أو service_account.json المحشي"""
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
     
-    # 1. المحاولة الأولى: قراءة ملف service_account.json محلي إذا كان موجوداً
-    if os.path.exists("service_account.json"):
-        try:
-            creds = Credentials.from_service_account_file("service_account.json", scopes=scopes)
-            client = gspread.authorize(creds)
-            return client.open_by_url(SPREADSHEET_URL).sheet1
-        except Exception as e:
-            st.warning(f"تعذر الاتصال عبر ملف service_account.json: {e}")
-
-    # 2. المحاولة الثانية: استخدام st.secrets من منصة Streamlit Cloud
+    # 1. المحاولة الأولى: الاستدعاء المباشر من Streamlit Cloud Secrets (الأكثر أماناً وموصى به)
     if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
         try:
             info = dict(st.secrets["gcp_service_account"])
@@ -54,91 +30,19 @@ def get_gsheet_worksheet():
             client = gspread.authorize(creds)
             return client.open_by_url(SPREADSHEET_URL).sheet1
         except Exception as e:
-            st.warning(f"تعذر الاتصال عبر st.secrets: {e}")
+            st.error(f"❌ فشل الاتصال عبر st.secrets: {e}")
 
-    # 3. المحاولة الثالثة: استخدام المفتاح الجديد المدمج بالقواميس مع معالجة آمنة لأسطر private_key
-    try:
-        info = dict(SERVICE_ACCOUNT_INFO)
-        if "private_key" in info and isinstance(info["private_key"], str):
-            info["private_key"] = info["private_key"].replace(chr(92) + "n", chr(10))
-        creds = Credentials.from_service_account_info(info, scopes=scopes)
-        client = gspread.authorize(creds)
-        return client.open_by_url(SPREADSHEET_URL).sheet1
-    except Exception as e:
-        st.error(f"خطأ في الاتصال بـ Google Sheets: {e}")
-        return None
-
-def sync_db_to_gsheets():
-    """مزامنة كافة بيانات SQLite المحلية وتصديرها إلى Google Sheets (مزامنة للأمام)"""
-    ws = get_gsheet_worksheet()
-    if ws is not None:
+    # 2. المحاولة الثانية: ملف service_account.json محلي إذا كان موجوداً
+    if os.path.exists("service_account.json"):
         try:
-            df = load_all_db_records()
-            ws.clear()
-            ws.update([df.columns.values.tolist()] + df.fillna("").values.tolist())
-            return True, "تم رفع وتصدير البيانات إلى Google Sheets بنجاح!"
+            creds = Credentials.from_service_account_file("service_account.json", scopes=scopes)
+            client = gspread.authorize(creds)
+            return client.open_by_url(SPREADSHEET_URL).sheet1
         except Exception as e:
-            return False, f"تعذرت المزامنة مع Google Sheets: {e}"
-    return False, "تعذر الاتصال بـ Google Sheets"
+            st.error(f"❌ فشل الاتصال عبر ملف service_account.json: {e}")
 
-def sync_gsheets_to_db_reverse():
-    """سحب وتحديث التعديلات من Google Sheets إلى قاعدة بيانات SQLite المحلية (مزامنة عكسية)"""
-    ws = get_gsheet_worksheet()
-    if ws is None:
-        return False, "تعذر الاتصال بـ Google Sheets"
-    try:
-        records = ws.get_all_records()
-        if not records:
-            return False, "جدول Google Sheets فارغ أو لا يحتوي على بيانات."
-        
-        df_gsheet = pd.DataFrame(records)
-        required_cols = ['المعرف', 'الاختبار', 'الصف الدراسي', 'الفصل', 'المسلسل', 'اسم الطالب', 'علوم', 'رياضيات', 'لغتي', 'انجليزي']
-        missing_cols = [c for c in required_cols if c not in df_gsheet.columns]
-        if missing_cols:
-            return False, f"الأعمدة التالية مفقودة في Google Sheets: {missing_cols}"
-            
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        
-        updated_count = 0
-        for _, row in df_gsheet.iterrows():
-            rec_id = int(row['المعرف']) if str(row['المعرف']).isdigit() else None
-            test_n = str(row['الاختبار'])
-            grade_n = str(row['الصف الدراسي'])
-            class_n = str(row['الفصل'])
-            seq_n = int(row['المسلسل']) if str(row['المسلسل']).isdigit() else 1
-            std_name = str(row['اسم الطالب'])
-            
-            def parse_num(v):
-                try: return float(v)
-                except: return 0.0
-
-            sc = parse_num(row['علوم'])
-            ma = parse_num(row['رياضيات'])
-            lu = parse_num(row['لغتي'])
-            en = parse_num(row['انجليزي'])
-            
-            if rec_id is not None:
-                c.execute("SELECT id FROM grades WHERE id = ?", (rec_id,))
-                exists = c.fetchone()
-                if exists:
-                    c.execute("""
-                        UPDATE grades
-                        SET test_name=?, grade=?, class_name=?, seq_num=?, student_name=?, science=?, math=?, lughati=?, english=?
-                        WHERE id=?
-                    """, (test_n, grade_n, class_n, seq_n, std_name, sc, ma, lu, en, rec_id))
-                else:
-                    c.execute("""
-                        INSERT INTO grades (id, test_name, grade, class_name, seq_num, student_name, science, math, lughati, english)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (rec_id, test_n, grade_n, class_n, seq_n, std_name, sc, ma, lu, en))
-                updated_count += 1
-            
-        conn.commit()
-        conn.close()
-        return True, f"تمت المزامنة العكسية بنجاح! تم سحب وتحديث {updated_count} سجل من Google Sheets."
-    except Exception as e:
-        return False, f"حدث خطأ أثناء المزامنة العكسية: {e}"
+    st.error("⚠️ لم يتم العثور على اعتمادات Google Sheets! يرجى إضافة [gcp_service_account] داخل Streamlit Cloud Secrets.")
+    return None
 
 # =========================================================
 # 1. تهيئة الصفحة والنمط Visual Theme & Page Config
