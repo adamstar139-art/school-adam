@@ -1808,12 +1808,30 @@ with tab_entry:
         </div>"""
         st.markdown(clean_html(legend_html), unsafe_allow_html=True)
 
-        c_btn1, c_btn2 = st.columns(2)
+        c_btn1, c_btn2, c_btn3 = st.columns([4, 4, 3])
         with c_btn1:
-            show_blank = st.checkbox("📝 عرض وطباعة كشف رصد فارغ (بدون درجات للتصحيح الورقي)", value=False)
+            show_blank = st.checkbox("📝 عرض وطباعة كشف رصد فارغ (بدون درجات)", value=False)
         with c_btn2:
+            table_print_orient = st.radio("📐 اتجاه طباعة التقرير:", ["عمودي (Portrait)", "أفقي (Landscape)"], index=0, horizontal=True)
+        with c_btn3:
             if st.button("🖨️ طباعة تقرير الفصل (PDF / Print)", type="primary"):
                 st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 200);</script>""", height=0)
+
+        # تطبيق اتجاه الصفحة المختار لجدول التقارير عند الطباعة
+        if "أفقي" in table_print_orient:
+            st.markdown("""<style>
+                @media print {
+                    @page { size: A4 landscape !important; margin: 6mm !important; }
+                    .custom-grade-table { font-size: 10pt !important; }
+                }
+            </style>""", unsafe_allow_html=True)
+        else:
+            st.markdown("""<style>
+                @media print {
+                    @page { size: A4 portrait !important; margin: 6mm !important; }
+                    .custom-grade-table { font-size: 9pt !important; }
+                }
+            </style>""", unsafe_allow_html=True)
 
         st.markdown('<div class="no-print">✏️ <b>جدول الرصد المنظم والتعديل التفاعلي:</b></div>', unsafe_allow_html=True)
 
@@ -1920,14 +1938,42 @@ with tab_entry:
 # ---------------------------------------------------------
 with tab_charts:
     st.subheader(f"📈 التحليل البياني والمقارنة بين الفصول - {selected_test}")
-    col_ch_print, col_ch_multi = st.columns([3, 4])
+    col_ch_multi, col_ch_orient, col_ch_print = st.columns([4, 4, 3])
     with col_ch_multi:
         avail_classes = grades_map[selected_grade]
         selected_classes_compare = st.multiselect("📚 اختر الفصول للمقارنة:", avail_classes, default=avail_classes)
+    with col_ch_orient:
+        chart_print_orient = st.radio("📐 اتجاه طباعة الرسم البياني:", ["أفقي (Landscape)", "عمودي (Portrait)"], index=0, horizontal=True)
     with col_ch_print:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🖨️ طباعة الرسم البياني (PDF)", type="primary"):
-            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 200);</script>""", height=0)
+            st.components.v1.html("""<script>setTimeout(function() { window.parent.print(); }, 300);</script>""", height=0)
+
+    # تطبيق الاتجاه المختار للرسم البياني عند الطباعة
+    if "أفقي" in chart_print_orient:
+        st.markdown("""<style>
+            @media print {
+                @page { size: A4 landscape !important; margin: 6mm !important; }
+                div[data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container, .svg-container {
+                    width: 100% !important;
+                    height: 80vh !important;
+                    max-height: 175mm !important;
+                    page-break-inside: avoid !important;
+                }
+            }
+        </style>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<style>
+            @media print {
+                @page { size: A4 portrait !important; margin: 6mm !important; }
+                div[data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container, .svg-container {
+                    width: 100% !important;
+                    height: 60vh !important;
+                    max-height: 240mm !important;
+                    page-break-inside: avoid !important;
+                }
+            }
+        </style>""", unsafe_allow_html=True)
 
     chart_shape = st.selectbox("شكل الرسم البياني للمقارنة:", ["أعمدة بيانية متجاورة (Grouped Bar Chart)", "منحنى بياني متعدد (Multi-Line Chart)", "رادار الفصول (Radar Chart)"])
 
